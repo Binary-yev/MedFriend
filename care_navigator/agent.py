@@ -17,6 +17,8 @@ import os
 from google import genai
 from google.adk.agents import Agent
 from google.adk.apps import App
+from google.adk.tools import McpToolset
+from mcp.client.stdio import StdioServerParameters
 
 CASE = {
     "name": "Alex",
@@ -163,13 +165,29 @@ Key distinction: the plan data tells you what is REQUIRED (a lookup); contacting
    - CLEAN LETTER — NO PLACEHOLDERS: write a ready-to-send letter using ONLY information you actually have (patient name, member ID, the denial reason, the plan terms, and the cited evidence). Do NOT invent or insert placeholder fields for information you do not have — OMIT address, phone, email, letterhead, and recipient address entirely rather than writing [Your Address], [Date], [Phone], etc. If a date is needed, use a real one from a document (e.g., the clearance date); otherwise leave it out. The letter must contain ZERO square-bracket placeholders.
    - APPROVAL GATE: wait for the patient to explicitly approve (or edit). Do NOT submit before approval.
    - SUBMIT: ONLY after the patient approves, call `contact_party('insurance', <the approved appeal text>)`, then relay the insurer's reply and outcome to the patient.
-   - If the patient does NOT approve, do NOT submit. Never announce an approval the insurer did not actually return, and never claim to have evidence the case does not contain."""
+   - If the patient does NOT approve, do NOT submit. Never announce an approval the insurer did not actually return, and never claim to have evidence the case does not contain.
+
+6) FIND A PROVIDER (live search via the Google Maps MCP) — when the patient wants to find a doctor/provider:
+   - Ask for their ZIP code (and confirm the specialty — orthopedic surgeon for the hip replacement) if not given.
+   - Use the Google Maps MCP tools to find real orthopedic providers near that ZIP (geocode the ZIP if needed, then search nearby).
+   - Present a short numbered list of what you found: name, address, and rating if available. Frame it as "here's what I found near you."
+   - You CANNOT confirm insurance network status — tell the patient to verify in-network with their plan.
+   - Ask the patient to SELECT one from the list. Then STOP. Do NOT book anything — booking is a later step.
+   - Send only the location and specialty to the search — never patient identity or health details."""
+
+maps_mcp = McpToolset(
+    connection_params=StdioServerParameters(
+        command="npx",
+        args=["-y", "@modelcontextprotocol/server-google-maps"],
+        env=dict(os.environ, GOOGLE_MAPS_API_KEY=os.environ.get("GOOGLE_MAPS_API_KEY", ""))
+    )
+)
 
 root_agent = Agent(
     name="care_navigator",
     model="gemini-2.5-flash",
     instruction=INSTRUCTION,
-    tools=[get_insurance_profile, get_benefits, contact_party, save_document, quarantine_document, list_quarantine, discard_quarantine, list_documents],
+    tools=[get_insurance_profile, get_benefits, contact_party, save_document, quarantine_document, list_quarantine, discard_quarantine, list_documents, maps_mcp],
 )
 
 app = App(
