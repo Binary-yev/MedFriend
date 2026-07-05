@@ -61,8 +61,17 @@ def contact_party(party: str, message: str) -> str:
             "rule you applied and/or the evidence you relied on. Reply as a single short official message."
         ),
         "provider_office": (
-            "You are the scheduling office for an orthopedic surgeon. Be friendly and offer 2-3 specific appointment date "
-            "options. Reply as a short message."
+            # Stateless counterparty (fresh LLM per call, no memory), so it must decide from the message
+            # content alone: a first request/proposal -> reject + counter-offer; a confirmation of one of
+            # its own offered slots -> book. This split is what makes the scheduling interrupt reliable.
+            "You are the scheduling office for an orthopedic surgeon. Be friendly and reply as one short message. "
+            "Decide what to say based ONLY on the message you receive:\n"
+            "- FIRST SCHEDULING REQUEST — if the message asks to book an appointment or proposes the patient's preferred "
+            "days/times: you must ALWAYS reply that those specific requested times are not available, then offer your OWN "
+            "2-3 specific slots. Offer exactly these: Tue 3/12 9:00 AM, Thu 3/14 2:30 PM, Fri 3/15 11:00 AM. Never accept "
+            "the patient's proposed times on this first request, under any circumstances.\n"
+            "- CONFIRMATION — if the message confirms or accepts ONE specific slot (e.g. one of Tue 3/12 9:00 AM, Thu 3/14 "
+            "2:30 PM, Fri 3/15 11:00 AM): confirm the appointment is booked for that slot with a brief friendly message."
         ),
     }
     persona = personas.get(party, "You are a helpful representative.")
@@ -173,7 +182,16 @@ Key distinction: the plan data tells you what is REQUIRED (a lookup); contacting
    - Present a short numbered list of what you found: name, address, and rating if available. Frame it as "here's what I found near you."
    - You CANNOT confirm insurance network status — tell the patient to verify in-network with their plan.
    - Ask the patient to SELECT one from the list. Then STOP. Do NOT book anything — booking is a later step.
-   - Send only the location and specialty to the search — never patient identity or health details."""
+   - Send only the location and specialty to the search — never patient identity or health details.
+
+7) BOOKING FLOW (approval-gated, multi-turn) — after the patient SELECTS a provider from the list in rule 6:
+   - (a) ASK TO BOOK (approval gate): ask "Would you like me to book an appointment with them?" Do NOT contact anyone yet — you must NOT call contact_party here. Then STOP and wait. If the patient declines, do not contact the office.
+   - (b) GET PREFERRED TIMES: once the patient says yes, ask what dates/times work best for them. Then STOP and wait.
+   - (c) FIRST CONTACT (request): after the patient gives their preferred times, you MUST call contact_party('provider_office', <a request naming the selected provider and the patient's preferred times>). Do not assume the office's availability yourself — get it from the tool.
+   - (d) RELAY THE COUNTER-OFFER: the office will reply that the requested times are unavailable and offer its OWN 2-3 specific slots. Relay those exact slots to the patient and ask which one works. Then STOP and wait.
+   - (e) SECOND CONTACT (confirm): once the patient picks one of the office's offered slots, you MUST call contact_party('provider_office', <a message confirming the patient accepts that specific slot>).
+   - (f) CONFIRM TO PATIENT: relay the office's confirmation and tell the patient the appointment is booked (simulated — there is no real calendar).
+   Never contact the office before the patient approves in step (a). Send only scheduling details to the office — never the patient's health details beyond the procedure/specialty."""
 
 maps_mcp = McpToolset(
     connection_params=StdioServerParameters(
