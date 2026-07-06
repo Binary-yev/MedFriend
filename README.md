@@ -7,8 +7,9 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-**A privacy‑first AI agent that guides a patient through a medical procedure — paperwork, scheduling, and insurance — while treating every inbound document as untrusted and gating every real‑world action behind explicit human approval.**
 ![Cover](cover.svg)
+**A privacy‑first AI agent that guides a patient through a medical procedure — paperwork, scheduling, and insurance — while treating every inbound document as untrusted and gating every real‑world action behind explicit human approval.**
+
 > **Track — Concierge Agents.** MedNav handles the logistics of a medical procedure while keeping the patient's personal information safe and secure — the heart of the Concierge track. It fits **Agents for Good** just as well, as a tool that widens access to healthcare navigation.
 >
 > **Naming convention used throughout this repo:** **MedFriend** is the project, **MedNav** is the assistant's persona (the name it introduces itself with), and **`care_navigator`** is the ADK application/module that implements it.
