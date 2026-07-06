@@ -27,14 +27,20 @@ jobs:
       - name: Install project dependencies
         run: agents-cli install
 
+      - name: Create dummy ADC for Vertex AI initialization
+        run: |
+          echo '{"type": "service_account", "project_id": "dummy", "private_key_id": "dummy", "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDU\n-----END PRIVATE KEY-----\n", "client_email": "dummy@dummy.iam.gserviceaccount.com", "client_id": "123"}' > dummy_adc.json
+      
       - name: Run evaluation (Generate traces)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_APPLICATION_CREDENTIALS: dummy_adc.json
           # Required for eval generation to query models
         run: agents-cli eval generate
 
       - name: Run evaluation (Grade traces)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_APPLICATION_CREDENTIALS: dummy_adc.json
           # Required for LLM-as-a-judge grading
         run: agents-cli eval grade
