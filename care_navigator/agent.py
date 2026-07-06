@@ -149,8 +149,14 @@ def _gmail_service():
     creds = Credentials.from_authorized_user_file(token_path, GMAIL_SCOPES)
     if (not creds.valid) and creds.expired and creds.refresh_token:
         creds.refresh(Request())
-        with open(token_path, "w") as fh:
-            fh.write(creds.to_json())
+        try:
+            with open(token_path, "w") as fh:
+                fh.write(creds.to_json())
+        except OSError as e:
+            # In Cloud Run, the token is mounted from Secret Manager as a read-only volume.
+            # We can use the refreshed token in-memory for this request, but cannot save it.
+            import logging
+            logging.warning(f"Could not save refreshed Gmail token to {token_path}: {e}")
     return build("gmail", "v1", credentials=creds)
 
 def _extract_plaintext(payload) -> str:
