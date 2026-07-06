@@ -1,0 +1,40 @@
+name: Agent Evaluation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install agents-cli
+        run: uv tool install google-agents-cli
+
+      - name: Install project dependencies
+        run: agents-cli install
+
+      - name: Run evaluation (Generate traces)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Required for eval generation to query models
+        run: agents-cli eval generate
+
+      - name: Run evaluation (Grade traces)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Required for LLM-as-a-judge grading
+        run: agents-cli eval grade

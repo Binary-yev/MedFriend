@@ -1,5 +1,9 @@
 # MedFriend — A Privacy-First Medical Concierge Agentic System
 
+[![Security Scan](https://github.com/Binary-yev/MedFriend/actions/workflows/security.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/security.yml)
+[![CI](https://github.com/Binary-yev/MedFriend/actions/workflows/ci.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/ci.yml)
+[![Agent Evaluation](https://github.com/Binary-yev/MedFriend/actions/workflows/eval.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/eval.yml)
+
 **A privacy‑first AI agent that guides a patient through a medical procedure — paperwork, scheduling, and insurance — while treating every inbound document as untrusted and gating every real‑world action behind explicit human approval.**
 
 > **Track — Concierge Agents.** MedNav handles the logistics of a medical procedure while keeping the patient's personal information safe and secure — the heart of the Concierge track. It fits **Agents for Good** just as well, as a tool that widens access to healthcare navigation.
