@@ -13,6 +13,7 @@ default ./token.json). The agent then loads that cached token and refreshes it s
 
 NEVER commit credentials.json or token.json — both are gitignored.
 """
+
 import os
 
 from google_auth_oauthlib.flow import InstalledAppFlow

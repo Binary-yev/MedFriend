@@ -5,6 +5,7 @@ from google.genai import types
 
 Runner = runners.Runner
 
+
 async def run_prompt(
     user_id: str,
     app_name: str,
@@ -29,11 +30,7 @@ async def run_prompt(
         async for event in runner.run_async(
             user_id=user_id, session_id=session.id, new_message=message
         ):
-            if (
-                event.is_final_response()
-                and event.content
-                and event.content.parts
-            ):
+            if event.is_final_response() and event.content and event.content.parts:
                 return (
                     event.author,
                     (event.content.parts[0].text or ""),

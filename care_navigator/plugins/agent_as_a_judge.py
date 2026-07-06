@@ -29,12 +29,11 @@ _USER_PROMPT_REMOVED_MESSAGE = (
     "A safety filter has removed the last user prompt as it was deemed unsafe."
 )
 _UNSAFE_TOOL_INPUT_MESSAGE = "Unable to call tool due to unsafe inputs."
-_UNSAFE_TOOL_OUTPUT_MESSAGE = (
-    "Unable to emit tool result due to unsafe tool output."
-)
+_UNSAFE_TOOL_OUTPUT_MESSAGE = "Unable to emit tool result due to unsafe tool output."
 _MODEL_RESPONSE_REMOVED_MESSAGE = (
     "A safety filter has removed the model's response as it was deemed unsafe."
 )
+
 
 def _get_default_jailbreak_safety_agent() -> LlmAgent:
     return LlmAgent(
@@ -42,6 +41,7 @@ def _get_default_jailbreak_safety_agent() -> LlmAgent:
         name="jailbreak_safety_agent",
         instruction=prompts.JAILBREAK_FILTER_INSTRUCTION,
     )
+
 
 default_safety_analysis_parser = lambda analysis: "UNSAFE" in analysis  # noqa: E731
 
@@ -107,9 +107,7 @@ class LlmAsAJudge(BasePlugin):
             ),
         )
         is_unsafe = self._analysis_parser(judge_analysis)
-        logging.debug(
-            "[%s]: `%s` (is_unsafe: %s)", author, judge_analysis, is_unsafe
-        )
+        logging.debug("[%s]: `%s` (is_unsafe: %s)", author, judge_analysis, is_unsafe)
         return is_unsafe
 
     async def on_user_message_callback(
@@ -119,9 +117,7 @@ class LlmAsAJudge(BasePlugin):
     ) -> types.Content | None:
         if JudgeOn.USER_MESSAGE not in self._judge_on:
             return None
-        message = (
-            f"<user_message>\n{user_message.parts[0].text}\n</user_message>"
-        )
+        message = f"<user_message>\n{user_message.parts[0].text}\n</user_message>"
         if await self._is_unsafe(message):
             # Set the state to false if the user prompt is unsafe and return a
             # modified user prompt. This will be consumed by the before_run_callback
@@ -139,9 +135,7 @@ class LlmAsAJudge(BasePlugin):
     ) -> types.Content | None:
         # Consume the state set in the `on_user_message_callback` to determine if the
         # user prompt is safe. If not, return a modified user prompt.
-        if not invocation_context.session.state.get(
-            "is_user_prompt_safe", True
-        ):
+        if not invocation_context.session.state.get("is_user_prompt_safe", True):
             # Reset session state to true to allow the runner to proceed normally.
             invocation_context.session.state["is_user_prompt_safe"] = True
             return types.Content(
@@ -161,9 +155,7 @@ class LlmAsAJudge(BasePlugin):
     ) -> dict[str, Any] | None:
         if JudgeOn.BEFORE_TOOL_CALL not in self._judge_on:
             return None
-        message = (
-            f"<tool_call>\nTool call: {tool.name}({tool_args!s})\n</tool_call>"
-        )
+        message = f"<tool_call>\nTool call: {tool.name}({tool_args!s})\n</tool_call>"
         if await self._is_unsafe(message):
             return {"error": _UNSAFE_TOOL_INPUT_MESSAGE}
 
@@ -201,7 +193,5 @@ class LlmAsAJudge(BasePlugin):
         if await self._is_unsafe(message):
             return types.Content(
                 role="model",
-                parts=[
-                    types.Part.from_text(text=_MODEL_RESPONSE_REMOVED_MESSAGE)
-                ],
+                parts=[types.Part.from_text(text=_MODEL_RESPONSE_REMOVED_MESSAGE)],
             )

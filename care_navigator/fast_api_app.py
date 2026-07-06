@@ -74,7 +74,9 @@ app: FastAPI = get_fast_api_app(
     lifespan=lifespan,
 )
 app.title = "medfriend"
-app.description = "API for interacting with the MedFriend / MedNav care-navigation agent"
+app.description = (
+    "API for interacting with the MedFriend / MedNav care-navigation agent"
+)
 
 
 @app.post("/feedback")
