@@ -1,8 +1,6 @@
 # MedFriend 
 
 [![Security Scan](https://github.com/Binary-yev/MedFriend/actions/workflows/security.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/security.yml)
-[![CI](https://github.com/Binary-yev/MedFriend/actions/workflows/ci.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/ci.yml)
-[![Agent Evaluation](https://github.com/Binary-yev/MedFriend/actions/workflows/eval.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/eval.yml)
 [![Google Cloud ADK](https://img.shields.io/badge/Google_Cloud_ADK-2.x-blue)](https://github.com/google/adk-python)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
