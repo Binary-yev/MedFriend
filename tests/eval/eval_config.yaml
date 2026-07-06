@@ -1,4 +1,5 @@
 metrics_to_run:
+  - tool_trajectory_check
   - custom_response_quality
 
 custom_metrics:
@@ -16,3 +17,27 @@ custom_metrics:
       def evaluate(instance):
           turns = (instance.get("agent_data") or {}).get("turns", [])
           return {'score': len(turns)}
+  - name: tool_trajectory_check
+    custom_function: |
+      def evaluate(instance):
+          expected_tool = None
+          ref = instance.get("reference")
+          if ref and "response" in ref:
+              parts = ref["response"].get("parts", [])
+              if parts and "text" in parts[0]:
+                  expected_tool = parts[0]["text"]
+          
+          if not expected_tool:
+              return {"score": 1, "explanation": "No expected tool specified."}
+
+          called_tools = []
+          for turn in (instance.get("agent_data") or {}).get("turns", []):
+              for event in turn.get("events", []):
+                  for part in (event.get("content") or {}).get("parts", []):
+                      if "function_call" in part:
+                          called_tools.append(part["function_call"].get("name"))
+          
+          if any(expected_tool in ct for ct in called_tools):
+              return {"score": 1, "explanation": f"Pass: Expected tool '{expected_tool}' matched a called tool."}
+          else:
+              return {"score": 0, "explanation": f"Fail: Expected tool '{expected_tool}' was NOT called. Tools called: {called_tools}"}

@@ -29,7 +29,14 @@ CASE = {
         "member_id": "BP123456789",
         "deductible": 1500,
         "out_of_pocket_max": 5000
-    }
+    },
+    "documents": [
+        {"kind": "cardiac_clearance", "key_facts": {"result": "cleared for surgery"}}
+    ],
+    "quarantine": [
+        {"id": 1, "kind": "denial_letter", "reason": "Contains injected instruction"}
+    ],
+    "_next_q_id": 2
 }
 
 def get_insurance_profile() -> dict:
@@ -220,7 +227,7 @@ root_agent = Agent(
     name="care_navigator",
     model="gemini-2.5-flash",
     instruction=INSTRUCTION,
-    tools=[get_insurance_profile, get_benefits, AgentTool(agent=insurance_reviewer), AgentTool(agent=provider_office), save_document, quarantine_document, list_quarantine, discard_quarantine, list_documents, maps_mcp],
+    tools=[get_insurance_profile, get_benefits, AgentTool(agent=insurance_reviewer), AgentTool(agent=provider_office), save_document, quarantine_document, list_quarantine, discard_quarantine, list_documents],
 )
 
 app = App(
