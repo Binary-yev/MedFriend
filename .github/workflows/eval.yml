@@ -33,9 +33,11 @@ jobs:
       
       - name: Run evaluation (Generate traces)
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GOOGLE_APPLICATION_CREDENTIALS: dummy_adc.json
-          # Required for eval generation to query models
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_CLOUD_PROJECT: dummy
+          BLAND_API_KEY: dummy
+          GOOGLE_MAPS_API_KEY: dummy
         run: agents-cli eval generate
 
       - name: Run evaluation (Grade traces)
