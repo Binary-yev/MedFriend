@@ -14,9 +14,9 @@ name: Security Scan
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
   schedule:
     # Weekly on Monday 08:00 UTC, so newly-disclosed issues surface even without a push.
     - cron: "0 8 * * 1"
