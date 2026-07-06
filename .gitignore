@@ -208,3 +208,4 @@ tools/a2a-inspector/
 *-key.json
 credentials*.json
 token.json
+api_key.txt
