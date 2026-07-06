@@ -12,23 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uuid
-from typing import (
-    Literal,
-)
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 7.28.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.7.0"
+    }
+  }
+}
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
-
-
-class Feedback(BaseModel):
-    """Represents feedback for a conversation."""
-
-    score: int | float
-    text: str | None = ""
-    log_type: Literal["feedback"] = "feedback"
-    service_name: Literal["medfriend"] = "medfriend"
-    user_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+provider "google" {
+  alias                 = "billing_override"
+  billing_project       = var.project_id
+  region                = var.region
+  user_project_override = true
+}

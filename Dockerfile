@@ -14,13 +14,22 @@
 
 FROM python:3.12-slim
 
+# Node.js provides `npx`, which ADK's McpToolset uses to launch the Google Maps
+# MCP server (`npx -y @modelcontextprotocol/server-google-maps`) over stdio.
+# Without it, the find-a-provider / booking flows fail at runtime in-container.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nodejs npm \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir uv==0.8.13
 
 WORKDIR /code
 
+# Copy dependency manifests first so Docker can cache the (slow) dependency layer.
 COPY ./pyproject.toml ./README.md ./uv.lock* ./
 
-COPY ./app ./app
+# Copy the ADK application package (the agent code lives in care_navigator/, not app/).
+COPY ./care_navigator ./care_navigator
 
 RUN uv sync --frozen
 
@@ -32,4 +41,5 @@ ENV AGENT_VERSION=${AGENT_VERSION}
 
 EXPOSE 8080
 
-CMD ["uv", "run", "uvicorn", "app.fast_api_app:app", "--host", "0.0.0.0", "--port", "8080"]
+# Serve the FastAPI app defined in care_navigator/fast_api_app.py.
+CMD ["uv", "run", "uvicorn", "care_navigator.fast_api_app:app", "--host", "0.0.0.0", "--port", "8080"]

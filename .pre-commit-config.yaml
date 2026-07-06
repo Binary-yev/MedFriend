@@ -1,0 +1,46 @@
+# Pre-commit hooks for MedFriend.
+#
+# Install once:   pip install pre-commit && pre-commit install
+# Run on demand:  pre-commit run --all-files
+#
+# These catch problems *before* they are committed — most importantly, secrets.
+# The rubric's hard rule is "no API keys or passwords in code"; detect-secrets
+# and detect-private-key enforce that at commit time, backing up the .gitignore.
+
+repos:
+  # --- General hygiene ---------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: detect-private-key # blocks committing PEM/SSH private keys
+
+  # --- Secret detection --------------------------------------------------------
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        # Excludes noise; token.json / credentials.json are already gitignored.
+        exclude: ^(uv\.lock|.*\.ipynb)$
+
+  # --- Python lint + format (matches pyproject's ruff config) ------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff # lint
+        args: [--fix]
+      - id: ruff-format # format
+
+  # --- Python SAST (same tool the security CI runs) ----------------------------
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.0
+    hooks:
+      - id: bandit
+        args: ["-ll", "-r", "care_navigator"]
+        pass_filenames: false

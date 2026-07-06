@@ -73,8 +73,8 @@ app: FastAPI = get_fast_api_app(
     otel_to_cloud=False,
     lifespan=lifespan,
 )
-app.title = "mednav-step-1"
-app.description = "API for interacting with the Agent mednav-step-1"
+app.title = "medfriend"
+app.description = "API for interacting with the MedFriend / MedNav care-navigation agent"
 
 
 @app.post("/feedback")
@@ -95,4 +95,8 @@ def collect_feedback(feedback: Feedback) -> dict[str, str]:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # nosec B104: binding all interfaces is required for the service to be
+    # reachable inside a container (Cloud Run). Per threat_model.md (Spoofing /
+    # EoP), the service must be deployed behind an authenticating gateway
+    # (Cloud Run IAM / IAP) rather than exposed directly.
+    uvicorn.run(app, host="0.0.0.0", port=8000)  # nosec B104

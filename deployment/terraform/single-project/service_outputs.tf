@@ -12,23 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uuid
-from typing import (
-    Literal,
-)
+output "cloud_run_service_url" {
+  description = "Cloud Run service URL"
+  value       = google_cloud_run_v2_service.app.uri
+}
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
-
-
-class Feedback(BaseModel):
-    """Represents feedback for a conversation."""
-
-    score: int | float
-    text: str | None = ""
-    log_type: Literal["feedback"] = "feedback"
-    service_name: Literal["medfriend"] = "medfriend"
-    user_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+output "cloud_run_service_name" {
+  description = "Cloud Run service name"
+  value       = google_cloud_run_v2_service.app.name
+}

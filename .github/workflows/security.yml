@@ -1,0 +1,91 @@
+# Security scanning for MedFriend.
+#
+# Three complementary static/supply-chain scanners, all uploading results to the
+# repository's GitHub Security tab (SARIF):
+#   - Bandit        — Python SAST (insecure patterns in our own code)
+#   - CodeQL        — deep semantic SAST with the security-extended query pack
+#   - Dependency Review — flags known-vulnerable dependencies on pull requests
+#
+# These complement MedFriend's RUNTIME defenses (the deterministic pre-filter in
+# care_navigator/security.py and the quarantine store in the agent). Static
+# scanning protects the codebase; the runtime layers protect the live agent.
+
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly on Monday 08:00 UTC, so newly-disclosed issues surface even without a push.
+    - cron: "0 8 * * 1"
+
+permissions:
+  contents: read
+  security-events: write # required to upload SARIF to the Security tab
+
+jobs:
+  bandit:
+    name: Bandit (Python SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install bandit
+        run: pip install "bandit[sarif]"
+
+      - name: Run bandit scan
+        # -r recursive, -ll medium severity and above, scan the agent package.
+        run: |
+          bandit -r care_navigator/ \
+            -ll \
+            --exclude .venv \
+            -f sarif \
+            -o bandit-results.sarif || true
+
+      - name: Upload Bandit SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: bandit-results.sarif
+          category: bandit
+
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          queries: security-extended
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: codeql-python
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    # PR-only: checks the diff for newly-introduced vulnerable dependencies.
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
