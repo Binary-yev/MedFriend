@@ -555,5 +555,11 @@ from .plugins.agent_as_a_judge import LlmAsAJudge
 app = App(
     root_agent=root_agent,
     name="care_navigator",
-    plugins=[LlmAsAJudge()],
+    # Judge guards the agent's OUTPUT and outbound ACTIONS (model_output +
+    # before_tool_call) — the stages no other layer covers. Deliberately NOT
+    # judging user_message: input-side injection is already handled by the
+    # deterministic pre-filter (security.py) and the document quarantine flow,
+    # and hard-blocking user_message here would preempt/mask the quarantine
+    # response. See the "Security & safety" section of the README.
+    plugins=[LlmAsAJudge(judge_on={"model_output", "before_tool_call"})],
 )
