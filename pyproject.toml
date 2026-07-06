@@ -3,7 +3,8 @@ name = "medfriend"
 version = "0.1.0"
 description = "MedFriend / MedNav — a privacy-first ADK care-navigation agent for patients."
 authors = [
-    {name = "Your Name", email = "your@email.com"},
+    # TODO: set your public contact email before submitting.
+    {name = "Binary-yev", email = "xxxxxxxx@gmail.com"},
 ]
 
 dependencies = [

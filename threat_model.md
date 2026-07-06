@@ -37,12 +37,16 @@ the analysis is correspondingly detailed.
   caller. Anyone with network access can converse as "the patient" and trigger
   privileged tools (send email, place a call). The agent has no notion of a
   verified principal — there is a single global `CASE`.
-- **Status:** ⬜ **Recommended.**
-- **Mitigation:** Deploy behind an authenticating gateway (Cloud Run IAM / IAP /
-  an OAuth2 proxy); bind each session to the authenticated principal; never trust
-  a user- or document-supplied identity. *(The agent already refuses to let a
-  document assert identity or status — see Tampering — but transport
-  authentication is outside the agent code and must be added at deploy time.)*
+- **Status:** 🟡 **Partial.** The provided Terraform (`deployment/terraform/`)
+  defaults the Cloud Run service to **requiring an authenticated invoker** — the
+  public `allUsers` binding is deliberately commented out in `iam.tf`, so IAM
+  authentication is enforced at the platform layer out of the box. What is not
+  yet done is binding each *session* to that authenticated principal (there is
+  still a single global `CASE`), so this is Partial rather than Implemented.
+- **Mitigation:** Keep the authenticated-invoker default (or front it with IAP /
+  an OAuth2 proxy); additionally bind each session to the authenticated principal
+  and never trust a user- or document-supplied identity. *(The agent already
+  refuses to let a document assert identity or status — see Tampering.)*
 
 ### 2. Tampering (data & state integrity)
 
@@ -74,8 +78,10 @@ the analysis is correspondingly detailed.
   discard/release decisions modify in-memory state (and stdout) but are not
   written to a durable, append-only audit log. A patient could dispute "I never
   approved that appeal," and an operator cannot reconstruct who did what.
-- **Status:** 🟡 **Partial.** OpenTelemetry (Cloud Trace/Logging) and the
-  `/feedback` sink exist, but there is no dedicated immutable action log.
+- **Status:** 🟡 **Partial.** OpenTelemetry (Cloud Trace/Logging) plus the
+  Terraform **BigQuery sinks** for GenAI-telemetry and `/feedback` logs give a
+  durable, queryable trail — but there is still no dedicated append-only log
+  scoped to *actions* (approvals, sends, calls, quarantine transitions).
 - **Mitigation:** Write an append-only audit record (Cloud Logging with
   retention, or BigQuery) for every outbound action and every quarantine
   transition, capturing timestamp, action, approver, and recipient.
@@ -95,7 +101,9 @@ the analysis is correspondingly detailed.
   working tree *and* git history); secrets load from env vars / git-ignored file
   paths; `.gitignore` covers `token.json`, `credentials.json`, `api_key.txt`,
   `*.pem`, `*-key.json`; pre-commit `detect-secrets` + `detect-private-key` add a
-  commit-time backstop.
+  commit-time backstop. In the Terraform deployment, runtime secrets are injected
+  from **Secret Manager** (the Gmail token mounted read-only as `token.json`, the
+  Bland.ai and Maps keys as secret env vars) rather than baked into the image.
 - **Threat 4c — over-sharing to counterparties:** Sending patient health details
   to the scheduling office, or patient identity to the Maps search.
 - **Status:** ✅ **Implemented.** Data-minimization rules in the `INSTRUCTION`
@@ -139,8 +147,11 @@ the analysis is correspondingly detailed.
 - **Threat 6c — unauthenticated access to privileged tools:** Same root cause as
   Spoofing (§1) — without transport auth, any caller can reach `send_mail` /
   `place_complaint_call`.
-- **Status:** ⬜ **Recommended.** Enforce authentication + authorization on the
-  serving surface before exposing it.
+- **Status:** 🟡 **Partial.** The Terraform default already requires an
+  authenticated invoker (see §1), so a caller cannot reach `send_mail` /
+  `place_complaint_call` without IAM auth. Full mitigation adds per-principal
+  *authorization* (not just authentication) and per-session identity binding
+  before exposing the surface more broadly.
 
 ---
 
@@ -148,7 +159,7 @@ the analysis is correspondingly detailed.
 
 | STRIDE category | Primary threat | Status |
 |---|---|---|
-| Spoofing | No transport authentication | ⬜ Recommended |
+| Spoofing | No transport authentication | 🟡 Partial (auth-invoker default) |
 | Tampering | Prompt injection | ✅ Implemented (2 layers) |
 | Tampering | Shared in-memory state | ⬜ Recommended |
 | Repudiation | No immutable action log | 🟡 Partial |
@@ -158,11 +169,12 @@ the analysis is correspondingly detailed.
 | Denial of service | No rate limiting | 🟡 Partial |
 | Elevation of privilege | Quarantine escape | ✅ Implemented |
 | Elevation of privilege | MCP subprocess over-privilege | ✅ Implemented |
-| Elevation of privilege | Unauthenticated privileged tools | ⬜ Recommended |
+| Elevation of privilege | Unauthenticated privileged tools | 🟡 Partial (auth-invoker default) |
 
 The **runtime, agent-level** threats (injection, PII disclosure, over-sharing,
-quarantine escape, MCP over-privilege) are mitigated in code today. The remaining
-open items are **deployment-time platform controls** (authentication, rate
-limiting, persistent audit logging, per-session state) — appropriate to add when
-moving from the hackathon demo to a hosted service, and tracked in the README
-roadmap.
+quarantine escape, MCP over-privilege) are mitigated in code, and the **Terraform
+platform layer** adds authenticated access, Secret Manager, and durable BigQuery
+logging. The remaining open items are **hard rate-limiting**, a dedicated
+**append-only action log**, and **per-session (multi-user) state** — appropriate
+to add when moving from the hackathon demo to a hosted service, and tracked in
+the README roadmap.

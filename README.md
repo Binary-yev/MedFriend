@@ -2,7 +2,7 @@
 
 **A privacy‑first AI agent that guides a patient through a medical procedure — paperwork, scheduling, and insurance — while treating every inbound document as untrusted and gating every real‑world action behind explicit human approval.**
 
-> **Suggested track:** Concierge Agents — a personal agent that simplifies an individual's life *and keeps their personal information safe and secure*. (Also a natural fit for **Agents for Good** as a healthcare‑access / advocacy tool.)
+> **Track — Concierge Agents.** MedNav handles the logistics of a medical procedure while keeping the patient's personal information safe and secure — the heart of the Concierge track. It fits **Agents for Good** just as well, as a tool that widens access to healthcare navigation.
 >
 > **Naming convention used throughout this repo:** **MedFriend** is the project, **MedNav** is the assistant's persona (the name it introduces itself with), and **`care_navigator`** is the ADK application/module that implements it.
 
@@ -34,7 +34,7 @@ When a session starts, MedNav offers a menu and then helps with one task at a ti
 | 4 | **Appeal an insurance denial** | Evidence‑based drafting: finds the denial *and* the document that satisfies it, cites it, gates submission on approval |
 | 5 | **Find or arrange rehab** | Same provider‑search + booking machinery, applied to rehab |
 | 6 | **Raise a complaint** | Drafts a formal complaint and (on approval) places an **outbound phone call** that voices it |
-| 7 | **Check email for insurance mail** | Ambient Gmail inbox check; relevant mail is run through the *same* untrusted‑document intake pipeline |
+| 7 | **Check email for insurance notices** | Ambient Gmail inbox check; relevant mail is run through the *same* untrusted‑document intake pipeline |
 
 Two design commitments run through all of these:
 
@@ -96,6 +96,8 @@ flowchart TD
 - **Bland.ai** — places an outbound phone call whose AI voice reads an *approved* complaint to a *patient‑supplied* number.
 - **Serving + platform layer (`fast_api_app.py`, `app_utils/`)** — a FastAPI app that serves the ADK web playground **and** [A2A protocol](https://a2a-protocol.org/) endpoints (dynamic agent card + JSON‑RPC), with OpenTelemetry export to Cloud Trace/Logging and pluggable session/artifact services (in‑memory locally; GCS + Vertex in the cloud).
 
+> **Runtime flows & worked examples:** the diagram above shows *what talks to what*. For *what happens, in what order, and why it's safe* — the document‑intake decision, the four security checkpoints, and the appeal / booking / ambient‑email flows, each with concrete input→output walkthroughs — see **[`FLOWS.md`](FLOWS.md)**.
+
 ---
 
 ## How this maps to the capstone requirements
@@ -108,10 +110,10 @@ The capstone asks for **at least three** key concepts. MedFriend demonstrates **
 |-------------|:------:|-----------------|
 | **Agent / multi‑agent system (ADK)** | ✅ Code | `care_navigator/agent.py` — root `Agent` (`care_navigator`) orchestrating two `LlmAgent` sub‑agents (`insurance_reviewer`, `provider_office`) via `AgentTool`; wrapped in an ADK `App` |
 | **MCP server** | ✅ Code | `care_navigator/agent.py` — `maps_mcp = McpToolset(StdioServerParameters(... @modelcontextprotocol/server-google-maps ...))` |
-| **Security features** | ✅ Code | **Two‑layer prompt‑injection defense** — deterministic PII scrub + signature detection (`care_navigator/security.py`, wired into `check_new_mail` and the root agent's `before_model_callback`) *plus* semantic quarantine store (`quarantine_document` + intake rules 3–4); approval gates on every outbound action; data minimization; least‑privilege MCP subprocess env; secrets hygiene (`.gitignore`, env‑based keys, OAuth); telemetry content suppression (`app_utils/telemetry.py`); SAST in CI (`.github/workflows/security.yml`); STRIDE `threat_model.md` + `SECURITY.md` |
-| **Deployability** | ✅ Code/Video | `Dockerfile` (Cloud Run–ready, Node runtime for the MCP server), `fast_api_app.py`, `app_utils/services.py` (GCS + Vertex services), `app_utils/telemetry.py` (Cloud Trace/Logging), `agents-cli deploy` |
-| **Agent skills (Agents CLI)** | ✅ Code/Video | `agents-cli-manifest.yaml`, `GEMINI.md`, and a full evaluation suite under `tests/eval/` driven by `agents-cli eval` |
-| **Antigravity** | 🎥 Video | `GEMINI.md` pre‑configures the project for Antigravity / Gemini‑CLI‑assisted development; demonstrate in the video |
+| **Security features** | ✅ Code | **Two‑layer prompt‑injection defense** — deterministic PII scrub + signature detection (`care_navigator/security.py`, wired into `check_new_mail` and the root agent's `before_model_callback`) *plus* semantic quarantine store (`quarantine_document` + intake rules 3–4); an **LLM‑as‑a‑Judge** guardrail on the agent's output and tool calls (`plugins/agent_as_a_judge.py`); approval gates on every outbound action; data minimization; least‑privilege MCP subprocess env; secrets hygiene (`.gitignore`, env‑based keys, OAuth); telemetry content suppression (`app_utils/telemetry.py`); SAST in CI (`.github/workflows/security.yml`); hash‑locked, reproducible dependencies (`uv.lock` + `uv sync --frozen`); STRIDE `threat_model.md` + `SECURITY.md` |
+| **Deployability** | ✅ Code/Video | `Dockerfile` (Cloud Run–ready, Node runtime for the MCP server), `fast_api_app.py`, `app_utils/services.py` (GCS + Vertex services), `app_utils/telemetry.py` (Cloud Trace/Logging), `agents-cli deploy`, and full **Terraform IaC** in `deployment/terraform/` (Cloud Run + least‑privilege service account + Secret Manager + GCS/BigQuery, authenticated‑invoker by default) |
+| **Agent skills (Agents CLI)** | ✅ Code/Video | `agents-cli-manifest.yaml`, `GEMINI.md`, and a full evaluation suite under `tests/eval/` driven by `agents-cli eval` — an **LLM‑as‑judge** quality grader (`metrics.py`) plus a deterministic **`tool_trajectory_check`** that verifies the correct tool fired (e.g. `quarantine_document` on the injection case), alongside the pytest **unit tests** in `tests/unit/` |
+| **Antigravity** | 🎥 Video | `GEMINI.md` pre‑configures the project for Antigravity / Gemini‑CLI‑assisted development; shown in the accompanying video |
 
 ### Category 2 — Implementation (70 pts)
 
@@ -134,6 +136,8 @@ This is the part of MedFriend worth reading closely, because an agent that reads
 
 The two layers are deliberately different in kind — Layer 1 is robust but rigid, Layer 2 is flexible but probabilistic — so an attacker has to defeat both. (See `care_navigator/security.py` and intake rules 3–4 in `agent.py`; `tests/unit/test_security.py` and the eval suite's `injection_defense` case assert the behavior.)
 
+**An LLM‑as‑a‑Judge guardrail on the agent's output and tool calls.** Beyond the two input‑side layers, a separate safety agent (`care_navigator/plugins/agent_as_a_judge.py`, with the jailbreak‑detection prompt in `plugins/prompts.py`) inspects the stages the other layers don't cover. It runs on the root agent's **model output** and **before every tool call** — wired in as `plugins=[LlmAsAJudge(judge_on={"model_output", "before_tool_call"})]` on the ADK `App` — and blocks an unsafe response or an unsafe tool invocation before it takes effect. It deliberately does **not** judge the incoming user message: input‑side injection is already handled by Layers 1–2, and hard‑blocking the user turn here would preempt the intended *quarantine* response. *(This runtime guardrail is distinct from the offline `tests/eval/metrics.py` judge below, which only grades response quality during evaluation.)*
+
 **Approval gates on every real‑world action.** Submitting an appeal, sending an email, placing a phone call, and booking an appointment all **stop and wait for explicit patient approval**. The agent will not contact the insurer or the office at document‑intake time, and it never announces an approval a counterparty didn't actually return.
 
 **Data minimization.** The agent sends only what each counterparty needs: only location and specialty go to the Maps search (never patient identity or health details); only scheduling details go to the office (never the patient's broader health record). Outbound email only ever replies to the *original sender* of a denial.
@@ -146,7 +150,11 @@ The two layers are deliberately different in kind — Layer 1 is robust but rigi
 
 **Static analysis in CI.** `.github/workflows/security.yml` runs **Bandit** (Python SAST), **CodeQL** (security‑extended), and **Dependency Review** on every push/PR and weekly, uploading results to the GitHub Security tab. `.pre-commit-config.yaml` adds commit‑time **secret detection** (`detect-secrets`, `detect-private-key`) and linting as a backstop to the `.gitignore` rule.
 
-**Threat model.** A full STRIDE assessment lives in [`threat_model.md`](threat_model.md), and a security policy + responsible‑disclosure process in [`SECURITY.md`](SECURITY.md). The threat model marks each threat as Implemented, Partial, or Recommended — the runtime/agent‑level threats are mitigated in code today; the remaining open items are deployment‑time platform controls (authentication, rate limiting, persistent audit logging).
+**Locked, reproducible dependencies (supply‑chain integrity).** Every Python dependency — direct *and* transitive — is pinned to an exact, hash‑verified version in `uv.lock` (189 packages, sha256‑locked), and the container build installs them with `uv sync --frozen`, so a build either reproduces the exact tested dependency set or fails — no silent drift, and a substituted or tampered package fails the hash check. `pyproject.toml` additionally caps each direct dependency below its next major version (e.g. `google-adk[gcp]>=2.0.0,<3.0.0`) so a breaking upgrade can't slip in unnoticed. This complements the **Dependency Review** CI check above, which flags known‑vulnerable versions on every PR.
+
+**Deploy‑time hardening (Terraform).** The included infrastructure ([`deployment/terraform/`](deployment/terraform/)) runs the service as a **dedicated least‑privilege service account**, injects every secret from **Secret Manager** (nothing baked into the image), and **defaults to requiring an authenticated invoker** — the public `allUsers` binding is deliberately commented out — which addresses the Spoofing / unauthenticated‑access concerns at the platform layer. GenAI‑telemetry and feedback logs are streamed to **BigQuery** for a durable, queryable trail.
+
+**Threat model.** A full STRIDE assessment lives in [`threat_model.md`](threat_model.md), and a security policy + responsible‑disclosure process in [`SECURITY.md`](SECURITY.md). The threat model marks each threat as Implemented, Partial, or Recommended — the runtime/agent‑level threats are mitigated in code, and the platform layer above adds authenticated access, Secret Manager, and durable logging; the main remaining open items are hard rate‑limiting and per‑session (multi‑user) state.
 
 **Scope safety.** MedNav explicitly does not provide medical advice, diagnoses, or dosing, and routes anything clinical back to the patient's care team.
 
@@ -182,6 +190,7 @@ MedFriend/
 │   ├── unit/                       # Fast, dependency-free tests: tamper-defense + deterministic security layer
 │   ├── integration/                # Live-server E2E (native ADK route, A2A stream, agent card, feedback)
 │   └── eval/                       # ADK behavioral eval suite (datasets + LLM-as-judge + tool-trajectory metric)
+├── deployment/terraform/           # Infrastructure as code: Cloud Run + least-privilege SA + Secret Manager + GCS/BigQuery
 ├── .github/workflows/security.yml  # SAST CI: Bandit + CodeQL (security-extended) + Dependency Review
 ├── threat_model.md                 # STRIDE threat model (implemented vs recommended mitigations)
 ├── SECURITY.md                     # Security policy + responsible disclosure
@@ -322,7 +331,9 @@ gcloud config set project <your-project-id>
 agents-cli deploy
 ```
 
-In the cloud, `app_utils/services.py` automatically switches sessions to the **Vertex AI session service** and artifacts to **GCS** when the corresponding environment variables are present; telemetry exports to **Cloud Trace** and **Cloud Logging**. To add CI/CD and Terraform, run `agents-cli scaffold enhance` then `agents-cli infra cicd`.
+In the cloud, `app_utils/services.py` automatically switches sessions to the **Vertex AI session service** and artifacts to **GCS** when the corresponding environment variables are present; telemetry exports to **Cloud Trace** and **Cloud Logging**.
+
+**Infrastructure as code (Terraform).** A complete single‑project deployment is defined under [`deployment/terraform/`](deployment/terraform/). It provisions the Cloud Run service, a **dedicated least‑privilege service account** (`app_sa`, granted only the roles it needs — including `secretmanager.secretAccessor`), all three third‑party credentials as **Secret Manager** secrets injected into the container (the Gmail token mounted as a read‑only `token.json` file; the Bland.ai and Maps keys as secret env vars — none baked into the image), a **GCS** logs bucket, and **BigQuery** sinks for GenAI‑telemetry and `/feedback` logs (durable, queryable records). By default the Cloud Run service **requires an authenticated invoker** — the public `allUsers` binding is deliberately commented out in `iam.tf`, so exposing it publicly is an explicit opt‑in.
 
 **Interoperability:** the running server exposes an [A2A](https://a2a-protocol.org/) agent card and JSON‑RPC endpoint, so MedNav can be registered with and called by other A2A‑compatible agents.
 

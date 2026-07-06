@@ -74,8 +74,11 @@ MedFriend's security design is documented in detail in the README
 - The demo case, document store, and quarantine live in module-level in-memory
   state; production would move these into per-session state with a persistent,
   auditable store (see the README roadmap).
-- The FastAPI surface does not itself enforce authentication; deploy it behind an
-  authenticating gateway (e.g. Cloud Run IAM / IAP) before exposing it.
+- The FastAPI application does not itself authenticate callers; it relies on the
+  platform. The provided Terraform defaults the Cloud Run service to requiring an
+  **authenticated invoker** (Cloud Run IAM) with the public `allUsers` binding
+  commented out — front it with IAP / a gateway for stricter control, and bind
+  each session to the authenticated principal before serving multiple users.
 - The deterministic pre-filter is high-precision, not exhaustive — it is a
   defense-in-depth layer in front of the model's judgment, not a replacement for
   it.
