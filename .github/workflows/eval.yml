@@ -43,6 +43,5 @@ jobs:
       - name: Run evaluation (Grade traces)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GOOGLE_APPLICATION_CREDENTIALS: dummy_adc.json
           # Required for LLM-as-a-judge grading
         run: agents-cli eval grade
