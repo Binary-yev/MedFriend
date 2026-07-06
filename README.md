@@ -1,4 +1,4 @@
-# MedFriend — the MedNav Care‑Navigation Agent
+# MedFriend — A Privacy-First Medical Concierge Agentic System
 
 **A privacy‑first AI agent that guides a patient through a medical procedure — paperwork, scheduling, and insurance — while treating every inbound document as untrusted and gating every real‑world action behind explicit human approval.**
 
