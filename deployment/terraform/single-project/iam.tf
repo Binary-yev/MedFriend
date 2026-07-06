@@ -56,4 +56,21 @@ resource "google_project_iam_member" "app_sa_roles" {
   depends_on = [resource.google_project_service.services]
 }
 
+# Grant the application SA access to Secret Manager
+resource "google_project_iam_member" "app_sa_secret_accessor" {
+  project    = var.project_id
+  role       = "roles/secretmanager.secretAccessor"
+  member     = "serviceAccount:${google_service_account.app_sa.email}"
+  depends_on = [resource.google_project_service.services]
+}
+
+# UNCOMMENT the following block to make the Cloud Run service publicly accessible 
+# (e.g. when you want to use the web interface from an unauthenticated browser).
+# resource "google_cloud_run_v2_service_iam_binding" "public_invoker" {
+#   project  = google_cloud_run_v2_service.app.project
+#   location = google_cloud_run_v2_service.app.location
+#   name     = google_cloud_run_v2_service.app.name
+#   role     = "roles/run.invoker"
+#   members  = ["allUsers"]
+# }
 

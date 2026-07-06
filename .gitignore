@@ -209,3 +209,9 @@ tools/a2a-inspector/
 credentials*.json
 token.json
 api_key.txt
+# Terraform state and executable
+*.tfstate
+*.tfstate.*
+terraform.exe
+terraform.zip
+gcloud_help.txt

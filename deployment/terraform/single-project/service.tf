@@ -63,6 +63,52 @@ resource "google_cloud_run_v2_service" "app" {
         name  = "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"
         value = "NO_CONTENT"
       }
+
+      env {
+        name  = "GMAIL_TOKEN_PATH"
+        value = "/secrets/gmail/token.json"
+      }
+
+      env {
+        name  = "REDEPLOY_TRIGGER"
+        value = "1"
+      }
+
+      env {
+        name = "BLAND_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.bland_api_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "GOOGLE_MAPS_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.google_maps_api_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      volume_mounts {
+        name       = "gmail-token-volume"
+        mount_path = "/secrets/gmail"
+      }
+    }
+
+    volumes {
+      name = "gmail-token-volume"
+      secret {
+        secret = google_secret_manager_secret.gmail_token.secret_id
+        items {
+          version = "latest"
+          path    = "token.json"
+        }
+      }
     }
 
     service_account = google_service_account.app_sa.email
