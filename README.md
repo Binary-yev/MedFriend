@@ -1,4 +1,4 @@
-# MedFriend — A Privacy-First Medical Concierge Agentic System
+# MedFriend 
 
 [![Security Scan](https://github.com/Binary-yev/MedFriend/actions/workflows/security.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/security.yml)
 [![CI](https://github.com/Binary-yev/MedFriend/actions/workflows/ci.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/ci.yml)
