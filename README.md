@@ -8,7 +8,7 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 **A privacy‑first AI agent that guides a patient through a medical procedure — paperwork, scheduling, and insurance — while treating every inbound document as untrusted and gating every real‑world action behind explicit human approval.**
-
+![Cover](cover.svg)
 > **Track — Concierge Agents.** MedNav handles the logistics of a medical procedure while keeping the patient's personal information safe and secure — the heart of the Concierge track. It fits **Agents for Good** just as well, as a tool that widens access to healthcare navigation.
 >
 > **Naming convention used throughout this repo:** **MedFriend** is the project, **MedNav** is the assistant's persona (the name it introduces itself with), and **`care_navigator`** is the ADK application/module that implements it.
@@ -54,44 +54,7 @@ Two design commitments run through all of these:
 
 MedFriend is a **multi‑agent system on Google's Agent Development Kit (ADK)**. A single root agent (`care_navigator`) owns the conversation and orchestrates two counterparty sub‑agents and a set of tools. Counterparties are invoked with **`AgentTool` (agent‑as‑a‑tool)** rather than `sub_agents`, so the root stays in control of the flow and every counterparty's reasoning shows up natively in the ADK trace.
 
-```mermaid
-flowchart TD
-    U["Patient<br/>text - PDF - image - audio"] <--> ROOT
-
-    subgraph ADK["Google ADK application: care_navigator"]
-        ROOT["Root agent: care_navigator<br/>Gemini 2.5 Flash - orchestration - policy - approval gates"]
-
-        subgraph SUB["Counterparty sub-agents via AgentTool"]
-            INS["insurance_reviewer<br/>prior-auth decisions"]
-            OFF["provider_office<br/>scheduling and records"]
-        end
-
-        subgraph LOCAL["Local case tools"]
-            PLAN["get_benefits<br/>get_insurance_profile"]
-            DOCS["save_document<br/>list_documents"]
-            QUAR["quarantine_document<br/>list / discard quarantine"]
-        end
-
-        ROOT --> INS
-        ROOT --> OFF
-        ROOT --> PLAN
-        ROOT --> DOCS
-        ROOT --> QUAR
-    end
-
-    ROOT -->|stdio| MAPS["Google Maps<br/>MCP server"]
-    ROOT -->|OAuth - patient's own| GMAIL["Gmail API<br/>check / send mail"]
-    ROOT -->|approval-gated| BLAND["Bland.ai<br/>outbound voice call"]
-
-    subgraph SERVE["Serving and platform layer"]
-        API["FastAPI + ADK web UI"]
-        A2A["A2A protocol endpoints<br/>agent card + JSON-RPC"]
-        OTEL["OpenTelemetry to Cloud Trace + Logging<br/>prompt content suppressed in spans"]
-        SESS["Session and artifact services<br/>in-memory - GCS - Vertex"]
-    end
-
-    ADK --- SERVE
-```
+![Architecture](architecture.svg)
 
 ### Component walk‑through
 
