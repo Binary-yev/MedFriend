@@ -43,11 +43,6 @@ def evaluate(instance):
             temperature=0,  # deterministic grading
             response_mime_type="application/json",
             response_schema=_Verdict,  # guaranteed schema-valid JSON
-            retry_options=types.HttpRetryOptions(
-                attempts=5,
-                initial_delay=2.0,
-                max_delay=60.0,
-            ),
         ),
     )
     verdict = response.parsed

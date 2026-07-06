@@ -29,11 +29,18 @@ from care_navigator.app_utils.a2a import attach_a2a_routes
 from care_navigator.app_utils.telemetry import setup_telemetry
 from care_navigator.app_utils.typing import Feedback
 
-load_dotenv()
-setup_telemetry()
-_, project_id = google.auth.default()
-logging_client = google_cloud_logging.Client()
-logger = logging_client.logger(__name__)
+import logging
+
+if os.getenv("INTEGRATION_TEST") != "TRUE":
+    load_dotenv()
+    setup_telemetry()
+    _, project_id = google.auth.default()
+    logging_client = google_cloud_logging.Client()
+    logger = logging_client.logger(__name__)
+else:
+    logger = logging.getLogger(__name__)
+    logger.log_struct = lambda data, **kwargs: logger.info(str(data))
+
 allow_origins = (
     os.getenv("ALLOW_ORIGINS", "").split(",") if os.getenv("ALLOW_ORIGINS") else None
 )
