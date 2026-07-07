@@ -1,0 +1,26 @@
+name: OSV-Scanner
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: "0 8 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  osv-scanner:
+    name: OSV-Scanner (Lockfile Scanning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OSV-Scanner
+        run: |
+          curl -sSL "https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_Linux_x86_64" -o osv-scanner
+          chmod +x osv-scanner
+      - name: Run OSV-Scanner on uv.lock
+        run: ./osv-scanner --lockfile=uv.lock:uv.lock
