@@ -18,9 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
       - name: Install OSV-Scanner
-        run: |
-          curl -sSL "https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_Linux_x86_64" -o osv-scanner
-          chmod +x osv-scanner
+        run: go install github.com/google/osv-scanner/cmd/osv-scanner@latest
       - name: Run OSV-Scanner on uv.lock
-        run: ./osv-scanner --lockfile=uv.lock:uv.lock
+        run: ~/go/bin/osv-scanner -L uv.lock:uv.lock
