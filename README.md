@@ -5,6 +5,7 @@
 [![Trivy](https://github.com/Binary-yev/MedFriend/actions/workflows/trivy.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/trivy.yml)
 [![Gitleaks](https://github.com/Binary-yev/MedFriend/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/gitleaks.yml)
 [![Checkov](https://github.com/Binary-yev/MedFriend/actions/workflows/checkov.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/checkov.yml)
+[![Terraform](https://github.com/Binary-yev/MedFriend/actions/workflows/terraform.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/terraform.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11--3.13-blue)](https://www.python.org)
 [![Google Cloud ADK](https://img.shields.io/badge/Google_Cloud_ADK-2.x-blue)](https://github.com/google/adk-python)

@@ -1,0 +1,42 @@
+name: Terraform
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "deployment/terraform/**"
+      - ".github/workflows/terraform.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - "deployment/terraform/**"
+      - ".github/workflows/terraform.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: fmt & validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deployment/terraform/single-project
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      # Format check runs over the whole terraform tree, not just single-project.
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+        working-directory: deployment/terraform
+
+      # -backend=false: validate the config without configuring/authenticating a backend.
+      - name: Terraform init (no backend)
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        run: terraform validate -no-color
