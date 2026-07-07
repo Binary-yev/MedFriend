@@ -1,0 +1,208 @@
+﻿lint-and-test	Run unit and integration tests	﻿2026-07-06T23:11:01.4193525Z ##[group]Run uv run pytest tests/unit tests/integration
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4193918Z ^[[36;1muv run pytest tests/unit tests/integration^[[0m
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4212146Z shell: /usr/bin/bash -e {0}
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4212408Z env:
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4212656Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4213023Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.14/x64
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4213429Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.14/x64/lib/pkgconfig
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4213819Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.14/x64
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4214169Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.14/x64
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4214631Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.14/x64
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4214987Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.14/x64/lib
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4215519Z   GEMINI_API_KEY: ***
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4215736Z   BLAND_API_KEY: dummy
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4215960Z   GOOGLE_MAPS_API_KEY: dummy
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:01.4216248Z ##[endgroup]
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:08.9288366Z ============================= test session starts ==============================
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:08.9288999Z platform linux -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:08.9289421Z rootdir: /home/runner/work/MedFriend/MedFriend
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:08.9289784Z configfile: pyproject.toml
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:08.9290107Z plugins: asyncio-1.4.0, anyio-4.14.1
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:08.9290799Z asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:08.9291422Z collected 28 items
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:08.9291617Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:08.9348055Z tests/unit/test_case_tools.py .........                                  [ 32%]
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:08.9355316Z tests/unit/test_dummy.py .                                               [ 35%]
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:08.9429236Z tests/unit/test_security.py .............                                [ 82%]
+lint-and-test	Run unit and integration tests	2026-07-06T23:11:19.9379707Z tests/integration/test_agent.py .                                        [ 85%]
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1262292Z tests/integration/test_server_e2e.py EEEE                                [100%]
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1263923Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1264715Z ==================================== ERRORS ====================================
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1265386Z ______________________ ERROR at setup of test_adk_run_sse ______________________
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1265824Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1266101Z request = <SubRequest 'server_fixture' for <Function test_adk_run_sse>>
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1266497Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1266657Z     @pytest.fixture(scope="session")
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1267256Z     def server_fixture(request: Any) -> Iterator[subprocess.Popen[str]]:
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1267883Z         """Pytest fixture to start and stop the server for testing."""
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1268465Z         logger.info("Starting server process")
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1268753Z         server_process = start_server()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1269023Z         if not wait_for_server():
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1269289Z >           pytest.fail("Server failed to start")
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1269571Z E           Failed: Server failed to start
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1269745Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1269863Z tests/integration/test_server_e2e.py:114: Failed
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1270214Z ------------------------------ Captured log setup ------------------------------
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1271139Z ERROR    test_server_e2e:test_server_e2e.py:55 /home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/google/adk/features/_feature_decorator.py:72: UserWarning: [EXPERIMENTAL] feature FeatureName.PLUGGABLE_AUTH is enabled.
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1272624Z ERROR    test_server_e2e:test_server_e2e.py:55 check_feature_enabled()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1273087Z ERROR    test_server_e2e:test_server_e2e.py:55 Traceback (most recent call last):
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1273582Z ERROR    test_server_e2e:test_server_e2e.py:55 File "<frozen runpy>", line 203, in _run_module_as_main
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1274381Z ERROR    test_server_e2e:test_server_e2e.py:55 File "<frozen runpy>", line 88, in _run_code
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1275202Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/uvicorn/__main__.py", line 4, in <module>
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1275863Z ERROR    test_server_e2e:test_server_e2e.py:55 uvicorn.main()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1276215Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~~~~^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1276845Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/click/core.py", line 1569, in __call__
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1277647Z ERROR    test_server_e2e:test_server_e2e.py:55 return self.main(*args, **kwargs)
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1278071Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~^^^^^^^^^^^^^^^^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1278701Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/click/core.py", line 1490, in main
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1279389Z ERROR    test_server_e2e:test_server_e2e.py:55 rv = self.invoke(ctx)
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1280034Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/click/core.py", line 1353, in invoke
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1280734Z ERROR    test_server_e2e:test_server_e2e.py:55 return ctx.invoke(self.callback, **ctx.params)
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1281219Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1282305Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/click/core.py", line 907, in invoke
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1282991Z ERROR    test_server_e2e:test_server_e2e.py:55 return callback(*args, **kwargs)
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1283663Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/uvicorn/main.py", line 413, in main
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1284270Z ERROR    test_server_e2e:test_server_e2e.py:55 run(
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1284587Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1284896Z ERROR    test_server_e2e:test_server_e2e.py:55 app,
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1285197Z ERROR    test_server_e2e:test_server_e2e.py:55 ^^^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1285528Z ERROR    test_server_e2e:test_server_e2e.py:55 ...<45 lines>...
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1286001Z ERROR    test_server_e2e:test_server_e2e.py:55 h11_max_incomplete_event_size=h11_max_incomplete_event_size,
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1286545Z ERROR    test_server_e2e:test_server_e2e.py:55 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1286944Z ERROR    test_server_e2e:test_server_e2e.py:55 )
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1287234Z ERROR    test_server_e2e:test_server_e2e.py:55 ^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1287811Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/uvicorn/main.py", line 580, in run
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1288436Z ERROR    test_server_e2e:test_server_e2e.py:55 server.run()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1288777Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~~^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1289375Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 66, in run
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1290068Z ERROR    test_server_e2e:test_server_e2e.py:55 return asyncio.run(self.serve(sockets=sockets))
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1290555Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1291184Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/opt/hostedtoolcache/Python/3.13.14/x64/lib/python3.13/asyncio/runners.py", line 196, in run
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1291897Z ERROR    test_server_e2e:test_server_e2e.py:55 return runner.run(main)
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1292281Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~~^^^^^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1292929Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/opt/hostedtoolcache/Python/3.13.14/x64/lib/python3.13/asyncio/runners.py", line 119, in run
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1293551Z ERROR    test_server_e2e:test_server_e2e.py:55 return self._loop.run_until_complete(task)
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1294018Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1294682Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/opt/hostedtoolcache/Python/3.13.14/x64/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1295408Z ERROR    test_server_e2e:test_server_e2e.py:55 return future.result()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1295811Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~~~~~^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1296473Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 70, in serve
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1297145Z ERROR    test_server_e2e:test_server_e2e.py:55 await self._serve(sockets)
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1297833Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/uvicorn/server.py", line 77, in _serve
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1298528Z ERROR    test_server_e2e:test_server_e2e.py:55 config.load()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1298880Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~~~^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1299507Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 435, in load
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1300243Z ERROR    test_server_e2e:test_server_e2e.py:55 self.loaded_app = import_from_string(self.app)
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1300723Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1301424Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/uvicorn/importer.py", line 19, in import_from_string
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1302425Z ERROR    test_server_e2e:test_server_e2e.py:55 module = importlib.import_module(module_str)
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1303111Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/opt/hostedtoolcache/Python/3.13.14/x64/lib/python3.13/importlib/__init__.py", line 88, in import_module
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1303829Z ERROR    test_server_e2e:test_server_e2e.py:55 return _bootstrap._gcd_import(name[level:], package, level)
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1304367Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1304923Z ERROR    test_server_e2e:test_server_e2e.py:55 File "<frozen importlib._bootstrap>", line 1395, in _gcd_import
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1305530Z ERROR    test_server_e2e:test_server_e2e.py:55 File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1306168Z ERROR    test_server_e2e:test_server_e2e.py:55 File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1306794Z ERROR    test_server_e2e:test_server_e2e.py:55 File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1307537Z ERROR    test_server_e2e:test_server_e2e.py:55 File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1308203Z ERROR    test_server_e2e:test_server_e2e.py:55 File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1308931Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/care_navigator/fast_api_app.py", line 33, in <module>
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1309540Z ERROR    test_server_e2e:test_server_e2e.py:55 setup_telemetry()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1309922Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~~~~~~~^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1310576Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/care_navigator/app_utils/telemetry.py", line 59, in setup_telemetry
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1311377Z ERROR    test_server_e2e:test_server_e2e.py:55 credentials, project_id = google.auth.default()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1312081Z ERROR    test_server_e2e:test_server_e2e.py:55 ~~~~~~~~~~~~~~~~~~~^^
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1312793Z ERROR    test_server_e2e:test_server_e2e.py:55 File "/home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/google/auth/_default.py", line 748, in default
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1313661Z ERROR    test_server_e2e:test_server_e2e.py:55 raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.1314887Z ERROR    test_server_e2e:test_server_e2e.py:55 google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2553972Z ERROR    test_server_e2e:test_server_e2e.py:104 Server did not become ready within 90 seconds
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2554625Z ____________________ ERROR at setup of test_a2a_chat_stream ____________________
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2555008Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2555324Z request = <SubRequest 'server_fixture' for <Function test_adk_run_sse>>
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2555591Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2555709Z     @pytest.fixture(scope="session")
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2556067Z     def server_fixture(request: Any) -> Iterator[subprocess.Popen[str]]:
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2556477Z         """Pytest fixture to start and stop the server for testing."""
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2556818Z         logger.info("Starting server process")
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2557113Z         server_process = start_server()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2557366Z         if not wait_for_server():
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2557629Z >           pytest.fail("Server failed to start")
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2557910Z E           Failed: Server failed to start
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2558080Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2558197Z tests/integration/test_server_e2e.py:114: Failed
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2558545Z ______________________ ERROR at setup of test_agent_card _______________________
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2558795Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2558958Z request = <SubRequest 'server_fixture' for <Function test_adk_run_sse>>
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2559210Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2559306Z     @pytest.fixture(scope="session")
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2559638Z     def server_fixture(request: Any) -> Iterator[subprocess.Popen[str]]:
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2560040Z         """Pytest fixture to start and stop the server for testing."""
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2560370Z         logger.info("Starting server process")
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2560639Z         server_process = start_server()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2560888Z         if not wait_for_server():
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2561144Z >           pytest.fail("Server failed to start")
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2561418Z E           Failed: Server failed to start
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2561583Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2561946Z tests/integration/test_server_e2e.py:114: Failed
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2562317Z ___________________ ERROR at setup of test_collect_feedback ____________________
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2562571Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2562736Z request = <SubRequest 'server_fixture' for <Function test_adk_run_sse>>
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2562989Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2563083Z     @pytest.fixture(scope="session")
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2563411Z     def server_fixture(request: Any) -> Iterator[subprocess.Popen[str]]:
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2563807Z         """Pytest fixture to start and stop the server for testing."""
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2564138Z         logger.info("Starting server process")
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2564422Z         server_process = start_server()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2564676Z         if not wait_for_server():
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2564933Z >           pytest.fail("Server failed to start")
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2565204Z E           Failed: Server failed to start
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2565366Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2565512Z tests/integration/test_server_e2e.py:114: Failed
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2565818Z =============================== warnings summary ===============================
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2566899Z <frozen abc>:106
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2567115Z <frozen abc>:106
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2567301Z <frozen abc>:106
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2567484Z <frozen abc>:106
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2567891Z   <frozen abc>:106: DeprecationWarning: BaseAgentConfig is deprecated and will be removed in future versions.
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2568257Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2568471Z .venv/lib/python3.13/site-packages/google/adk/features/_feature_decorator.py:72
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2569293Z   /home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/google/adk/features/_feature_decorator.py:72: UserWarning: [EXPERIMENTAL] feature FeatureName.PLUGGABLE_AUTH is enabled.
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2570105Z     check_feature_enabled()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2570245Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2570415Z tests/integration/test_agent.py::test_agent_stream
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2571184Z   /home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/google/adk/tools/mcp_tool/mcp_toolset.py:304: UserWarning: [EXPERIMENTAL] feature FeatureName._MCP_GRACEFUL_ERROR_HANDLING is enabled.
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2572065Z     session = await self._mcp_session_manager.create_session(
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2572300Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2572425Z tests/integration/test_agent.py::test_agent_stream
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2572740Z tests/integration/test_agent.py::test_agent_stream
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2573045Z tests/integration/test_agent.py::test_agent_stream
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2573342Z tests/integration/test_agent.py::test_agent_stream
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2573639Z tests/integration/test_agent.py::test_agent_stream
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2573944Z tests/integration/test_agent.py::test_agent_stream
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2574251Z tests/integration/test_agent.py::test_agent_stream
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2574950Z   /home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/google/adk/tools/mcp_tool/mcp_toolset.py:346: DeprecationWarning: MCPTool class is deprecated, use `McpTool` instead.
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2575638Z     mcp_tool = MCPTool(
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2575773Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2576247Z tests/integration/test_agent.py::test_agent_stream
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2577099Z   /home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/google/adk/features/_feature_decorator.py:72: UserWarning: [EXPERIMENTAL] feature FeatureName.BASE_AUTHENTICATED_TOOL is enabled.
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2577819Z     check_feature_enabled()
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2577965Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2578084Z tests/integration/test_agent.py::test_agent_stream
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2578783Z   /home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/google/adk/tools/function_tool.py:95: UserWarning: [EXPERIMENTAL] feature FeatureName.JSON_SCHEMA_FOR_FUNC_DECL is enabled.
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2579472Z     build_function_declaration(
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2579630Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2579752Z tests/integration/test_agent.py::test_agent_stream
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2580478Z   /home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/google/genai/_api_client.py:932: DeprecationWarning: Inheritance class AiohttpClientSession from ClientSession is discouraged
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2581282Z     class AiohttpClientSession(aiohttp.ClientSession):  # type: ignore[misc]
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2581554Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2581754Z tests/integration/test_agent.py::test_agent_stream
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2582486Z   /home/runner/work/MedFriend/MedFriend/.venv/lib/python3.13/site-packages/google/adk/models/google_llm.py:262: UserWarning: [EXPERIMENTAL] feature FeatureName.PROGRESSIVE_SSE_STREAMING is enabled.
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2583198Z     async for llm_response in aggregator_gen:
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2583384Z 
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2583578Z -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2583976Z =========================== short test summary info ============================
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2584438Z ERROR tests/integration/test_server_e2e.py::test_adk_run_sse - Failed: Server failed to start
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2585077Z ERROR tests/integration/test_server_e2e.py::test_a2a_chat_stream - Failed: Server failed to start
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2585656Z ERROR tests/integration/test_server_e2e.py::test_agent_card - Failed: Server failed to start
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2586202Z ERROR tests/integration/test_server_e2e.py::test_collect_feedback - Failed: Server failed to start
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.2586684Z ============ 24 passed, 17 warnings, 4 errors in 107.19s (0:01:47) =============
+lint-and-test	Run unit and integration tests	2026-07-06T23:12:50.5420808Z ##[error]Process completed with exit code 1.

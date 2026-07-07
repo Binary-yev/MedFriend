@@ -108,6 +108,9 @@ build-backend = "hatchling.build"
 [tool.pytest.ini_options]
 pythonpath = "."
 asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "live: test performs a real Gemini API call; skipped unless RUN_LIVE_TESTS=1 with a real key",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["care_navigator"]

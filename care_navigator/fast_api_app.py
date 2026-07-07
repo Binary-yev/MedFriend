@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import contextlib
+import logging
 import os
 from collections.abc import AsyncIterator
 
@@ -28,8 +29,6 @@ from care_navigator.app_utils import services
 from care_navigator.app_utils.a2a import attach_a2a_routes
 from care_navigator.app_utils.telemetry import setup_telemetry
 from care_navigator.app_utils.typing import Feedback
-
-import logging
 
 if os.getenv("INTEGRATION_TEST") != "TRUE":
     load_dotenv()
