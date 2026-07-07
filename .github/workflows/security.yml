@@ -89,3 +89,58 @@ jobs:
       - uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
+
+  gitleaks:
+    name: Gitleaks (Secret Scanning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  checkov:
+    name: Checkov (IaC Scanning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: deployment/terraform
+          framework: terraform
+          output_format: cli
+          soft_fail: true # Change to false to block PRs on IaC vulnerabilities
+
+  trivy:
+    name: Trivy (Container Scanning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker Image
+        run: docker build -t medfriend:ci .
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'medfriend:ci'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  osv-scanner:
+    name: OSV-Scanner (Lockfile Scanning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OSV-Scanner
+        run: |
+          curl -sSL "https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_Linux_x86_64" -o osv-scanner
+          chmod +x osv-scanner
+      - name: Run OSV-Scanner on uv.lock
+        run: ./osv-scanner --lockfile=uv.lock:uv.lock
+
