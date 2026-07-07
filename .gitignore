@@ -215,3 +215,9 @@ api_key.txt
 terraform.exe
 terraform.zip
 gcloud_help.txt
+
+# generated logs and run artifacts (never commit)
+/log.txt
+/ci_log*.txt
+/eval_log*.txt
+/artifacts/

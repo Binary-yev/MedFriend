@@ -7,7 +7,7 @@ ID > Application type: "Desktop app" > Download JSON):
 
     GMAIL_CREDENTIALS_PATH=/absolute/path/to/credentials.json python authorize_gmail.py
 
-It opens a browser for consent (sign in as the PATIENT account, e.g. yyguyduy@gmail.com,
+It opens a browser for consent (sign in as the PATIENT account, e.g. you@example.com,
 grant read + send), then writes token.json next to the repo (path from GMAIL_TOKEN_PATH,
 default ./token.json). The agent then loads that cached token and refreshes it silently.
 
