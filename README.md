@@ -1,6 +1,12 @@
 # MedFriend 
 
-[![Security Scan](https://github.com/Binary-yev/MedFriend/actions/workflows/security.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/security.yml)
+[![Bandit Scan](https://github.com/Binary-yev/MedFriend/actions/workflows/bandit.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/bandit.yml)
+[![CodeQL Analysis](https://github.com/Binary-yev/MedFriend/actions/workflows/codeql.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/codeql.yml)
+[![Dependency Review](https://github.com/Binary-yev/MedFriend/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/dependency-review.yml)
+[![Gitleaks Scan](https://github.com/Binary-yev/MedFriend/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/gitleaks.yml)
+[![Checkov Scan](https://github.com/Binary-yev/MedFriend/actions/workflows/checkov.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/checkov.yml)
+[![Trivy Scan](https://github.com/Binary-yev/MedFriend/actions/workflows/trivy.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/trivy.yml)
+[![OSV-Scanner](https://github.com/Binary-yev/MedFriend/actions/workflows/osv-scanner.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/osv-scanner.yml)
 [![Google Cloud ADK](https://img.shields.io/badge/Google_Cloud_ADK-2.x-blue)](https://github.com/google/adk-python)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
