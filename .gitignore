@@ -221,3 +221,5 @@ gcloud_help.txt
 /ci_log*.txt
 /eval_log*.txt
 /artifacts/
+
+deployment/terraform/**/vars/*.tfvars
