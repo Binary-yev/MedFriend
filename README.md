@@ -13,6 +13,7 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 ![Cover](cover.svg)
+
 **A privacy‑first AI agent that guides a patient through a medical procedure — paperwork, scheduling, and insurance — while treating every inbound document as untrusted and gating every real‑world action behind explicit human approval.**
 
 > **Track — Concierge Agents.** MedNav handles the logistics of a medical procedure while keeping the patient's personal information safe and secure — the heart of the Concierge track. It fits **Agents for Good** just as well, as a tool that widens access to healthcare navigation.
