@@ -14,9 +14,11 @@
 
 FROM python:3.12-slim
 
-# Node.js provides `npx`, which ADK's McpToolset uses to launch the Google Maps
-# MCP server (`npx -y @modelcontextprotocol/server-google-maps`) over stdio.
-# Without it, the find-a-provider / booking flows fail at runtime in-container.
+# Node.js runs the Google Maps MCP server that ADK's McpToolset launches over
+# stdio. It is installed from a committed, integrity-locked lockfile via `npm ci`
+# (below), not fetched at runtime with `npx`, so a tampered or unpinned upstream
+# release cannot change what is launched. Without Node, the find-a-provider /
+# booking flows fail at runtime in-container.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends nodejs npm \
     && rm -rf /var/lib/apt/lists/*
@@ -27,6 +29,12 @@ WORKDIR /code
 
 # Copy dependency manifests first so Docker can cache the (slow) dependency layer.
 COPY ./pyproject.toml ./README.md ./uv.lock* ./
+
+# Install the pinned MCP server(s) from the lockfile. `npm ci` fails if
+# package.json and package-lock.json disagree, and verifies every package against
+# its recorded SHA-512 integrity hash before installing.
+COPY ./package.json ./package-lock.json ./
+RUN npm ci --omit=dev
 
 # Copy the ADK application package (the agent code lives in care_navigator/, not app/).
 COPY ./care_navigator ./care_navigator

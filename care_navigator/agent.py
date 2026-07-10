@@ -484,10 +484,10 @@ provider_office = LlmAgent(
 
 # ---------------------------------------------------------------------------
 # LEAST PRIVILEGE for the third-party Google Maps MCP server. This is an npm
-# package we launch via `npx` as a subprocess. Handing it the full process
+# package we launch as a local subprocess. Handing it the full process
 # environment would expose MedFriend's OWN secrets (the Bland.ai key, the Gmail
 # token path, GCP credentials) to third-party code — a supply-chain risk if the
-# package is ever compromised. So we start from the process env (npx needs
+# package is ever compromised. So we start from the process env (node needs
 # PATH/HOME to run) but STRIP our sensitive keys, passing only the one credential
 # this server legitimately needs: GOOGLE_MAPS_API_KEY.
 # ---------------------------------------------------------------------------
@@ -509,11 +509,26 @@ def _scoped_maps_env() -> dict:
     return env
 
 
+# The MCP server is installed from a committed, integrity-locked lockfile
+# (package.json + package-lock.json, via `npm ci`) rather than fetched at launch
+# with `npx`. We invoke the pinned binary directly out of node_modules, so a
+# tampered or unpinned upstream release can never be pulled at runtime. The path
+# is resolved from this file so it works both in-container (WORKDIR /code) and in
+# local dev, regardless of the process working directory.
+_MAPS_MCP_ENTRY = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "node_modules",
+    "@modelcontextprotocol",
+    "server-google-maps",
+    "dist",
+    "index.js",
+)
+
 maps_mcp = McpToolset(
     connection_params=StdioConnectionParams(
         server_params=StdioServerParameters(
-            command="npx",
-            args=["-y", "@modelcontextprotocol/server-google-maps"],
+            command="node",
+            args=[_MAPS_MCP_ENTRY],
             env=_scoped_maps_env(),
         ),
         timeout=60.0,

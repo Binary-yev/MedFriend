@@ -141,9 +141,14 @@ the analysis is correspondingly detailed.
   process environment, a compromised version could read MedFriend's own secrets
   (Bland key, Gmail token path, GCP creds).
 - **Status:** ✅ **Implemented.** `_scoped_maps_env()` strips MedFriend's
-  sensitive keys and passes the subprocess only `GOOGLE_MAPS_API_KEY`.
-- **Mitigation (further):** Pin the MCP package to a specific version and apply
-  container egress restrictions.
+  sensitive keys and passes the subprocess only `GOOGLE_MAPS_API_KEY`. The server
+  itself is installed from a committed, integrity-locked lockfile (`package.json`
+  + `package-lock.json`, installed with `npm ci`) and launched directly from
+  `node_modules` rather than via `npx`, so the exact 0.6.2 release is verified by
+  its SHA-512 hash and a tampered or unpinned upstream cannot be pulled at runtime
+  (npm-side parity with the hash-locked Python dependencies).
+- **Mitigation (further):** Apply container egress restrictions to further bound
+  what the subprocess can reach.
 - **Threat 6c — unauthenticated access to privileged tools:** Same root cause as
   Spoofing (§1) — without transport auth, any caller can reach `send_mail` /
   `place_complaint_call`.

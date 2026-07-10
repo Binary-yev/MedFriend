@@ -1,0 +1,9 @@
+{
+  "name": "medfriend-mcp-servers",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Integrity-pinned MCP server(s) that MedFriend launches over stdio. Kept separate from the Python app dependencies; installed with `npm ci` from the committed lockfile so npx cannot pull an unpinned/tampered release.",
+  "dependencies": {
+    "@modelcontextprotocol/server-google-maps": "0.6.2"
+  }
+}
