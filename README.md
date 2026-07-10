@@ -1,4 +1,4 @@
-# MedFriend 
+# MedFriend
 
 [![CI](https://github.com/Binary-yev/MedFriend/actions/workflows/ci.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Binary-yev/MedFriend/actions/workflows/codeql.yml/badge.svg)](https://github.com/Binary-yev/MedFriend/actions/workflows/codeql.yml)
