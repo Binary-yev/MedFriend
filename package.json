@@ -2,8 +2,11 @@
   "name": "medfriend-mcp-servers",
   "version": "0.0.0",
   "private": true,
-  "description": "Integrity-pinned MCP server(s) that MedFriend launches over stdio. Kept separate from the Python app dependencies; installed with `npm ci` from the committed lockfile so npx cannot pull an unpinned/tampered release.",
+  "description": "Integrity-pinned MCP server(s) that MedFriend launches over stdio. Installed with `npm ci` from the committed lockfile so npx cannot pull an unpinned/tampered release. The `overrides` block forces @modelcontextprotocol/sdk forward from the vulnerable 1.0.1 that the archived server-google-maps@0.6.2 pins, patching GHSA-8r9q-7v3j-jr4g (ReDoS), GHSA-w48q-cv73-mx4w (DNS rebinding), and the cross-client data-leak advisory.",
   "dependencies": {
     "@modelcontextprotocol/server-google-maps": "0.6.2"
+  },
+  "overrides": {
+    "@modelcontextprotocol/sdk": "1.29.0"
   }
 }
