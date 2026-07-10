@@ -64,4 +64,6 @@ def test_sdk_override_patches_vulnerable_transitive_dep():
         f"lockfile SDK {resolved!r} != override {override!r} — run `npm install` to refresh the lockfile"
     )
     # Must be past the vulnerable range (advisories affect <= 1.25.3).
-    assert _ver_tuple(resolved) >= (1, 26, 0), f"SDK {resolved} is still in the vulnerable range"
+    assert _ver_tuple(resolved) >= (1, 26, 0), (
+        f"SDK {resolved} is still in the vulnerable range"
+    )
