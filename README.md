@@ -13,7 +13,6 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 ![Cover](cover.svg)
-
 **A privacy‑first AI agent that guides a patient through a medical procedure — paperwork, scheduling, and insurance — while treating every inbound document as untrusted and gating every real‑world action behind explicit human approval.**
 
 > **Track — Concierge Agents.** MedNav handles the logistics of a medical procedure while keeping the patient's personal information safe and secure — the heart of the Concierge track. It fits **Agents for Good** just as well, as a tool that widens access to healthcare navigation.
@@ -68,7 +67,7 @@ MedFriend is a **multi‑agent system on Google's Agent Development Kit (ADK)**.
 - **Root agent (`care_navigator`)** — Gemini 2.5 Flash with a retry policy. It holds the whole operating policy in its `INSTRUCTION` (tool‑routing rules, the document‑intake state machine, the quarantine lifecycle, and each approval‑gated flow) and decides which of its 13 tools to call.
 - **`insurance_reviewer` / `provider_office` (sub‑agents via `AgentTool`)** — deliberately **stateless deciders** that key off the message they receive. This is what makes multi‑turn flows reliable: the scheduling office *always* rejects the first request and counter‑offers its own slots, then books only when the patient confirms one of those slots — so the "negotiate then confirm" interrupt is deterministic rather than accidental.
 - **Local case tools** — plan‑fact lookups (`get_benefits`, `get_insurance_profile`), the trusted document store (`save_document` / `list_documents`), and the quarantine / dead‑letter store (`quarantine_document` / `list_quarantine` / `discard_quarantine`).
-- **Google Maps MCP server** — a real Model Context Protocol server (`@modelcontextprotocol/server-google-maps`) launched over **stdio** via ADK's `McpToolset`; used for live provider search.
+- **Google Maps MCP server** — the `@modelcontextprotocol/server-google-maps` reference server pinned to `@0.6.2`, run over **stdio** via ADK's `McpToolset` for live provider search. It's installed from an integrity‑locked lockfile (`npm ci`) and launched directly from `node_modules` — never fetched at runtime with `npx`.
 - **Gmail API** — ambient inbox check and outbound send, authorized with the **patient's own OAuth** (see `authorize_gmail.py`). Used directly rather than through a community Gmail MCP server because those needed Node ≥ 22 and were unreliable in this environment.
 - **Bland.ai** — places an outbound phone call whose AI voice reads an *approved* complaint to a *patient‑supplied* number.
 - **Serving + platform layer (`fast_api_app.py`, `app_utils/`)** — a FastAPI app that serves the ADK web playground **and** [A2A protocol](https://a2a-protocol.org/) endpoints (dynamic agent card + JSON‑RPC), with OpenTelemetry export to Cloud Trace/Logging and pluggable session/artifact services (in‑memory locally; GCS + Vertex in the cloud).
@@ -187,9 +186,9 @@ The capstone asks for **at least three** key concepts. MedFriend demonstrates **
 | Key concept | Status | Where to see it |
 |-------------|:------:|-----------------|
 | **Agent / multi‑agent system (ADK)** | ✅ Code | `care_navigator/agent.py` — root `Agent` (`care_navigator`) orchestrating two `LlmAgent` sub‑agents (`insurance_reviewer`, `provider_office`) via `AgentTool`; wrapped in an ADK `App` |
-| **MCP server** | ✅ Code | `care_navigator/agent.py` — `maps_mcp = McpToolset(StdioServerParameters(... @modelcontextprotocol/server-google-maps ...))` |
-| **Security features** | ✅ Code | **Two‑layer prompt‑injection defense** — deterministic PII scrub + signature detection (`care_navigator/security.py`, wired into `check_new_mail` and the root agent's `before_model_callback`) *plus* semantic quarantine store (`quarantine_document` + intake rules 3–4); an **LLM‑as‑a‑Judge** guardrail on the agent's output and tool calls (`plugins/agent_as_a_judge.py`); approval gates on every outbound action; data minimization; least‑privilege MCP subprocess env; secrets hygiene (`.gitignore`, env‑based keys, OAuth); telemetry content suppression (`app_utils/telemetry.py`); SAST in CI (`.github/workflows/` — Bandit, CodeQL, Gitleaks, Trivy, Checkov, OSV-Scanner, Dependency Review); hash‑locked, reproducible dependencies (`uv.lock` + `uv sync --frozen`); STRIDE `threat_model.md` + `SECURITY.md` |
-| **Deployability** | ✅ Code/Video | `Dockerfile` (Cloud Run–ready, Node runtime for the MCP server), `fast_api_app.py`, `app_utils/services.py` (GCS + Vertex services), `app_utils/telemetry.py` (Cloud Trace/Logging), `agents-cli deploy`, and full **Terraform IaC** in `deployment/terraform/` (Cloud Run + least‑privilege service account + Secret Manager + GCS/BigQuery, authenticated‑invoker by default) |
+| **MCP server** | ✅ Code | `care_navigator/agent.py` — `maps_mcp = McpToolset(StdioServerParameters(command="node", args=[node_modules/@modelcontextprotocol/server-google-maps/dist/index.js]))`, pinned to `@0.6.2` and installed via `npm ci` |
+| **Security features** | ✅ Code | **Two‑layer prompt‑injection defense** — deterministic PII scrub + signature detection (`care_navigator/security.py`, wired into `check_new_mail` and the root agent's `before_model_callback`) *plus* semantic quarantine store (`quarantine_document` + intake rules 3–4); an **LLM‑as‑a‑Judge** guardrail on the agent's output and tool calls (`plugins/agent_as_a_judge.py`); approval gates on every outbound action; data minimization; least‑privilege MCP subprocess env; **integrity‑pinned** MCP server (`@modelcontextprotocol/server-google-maps@0.6.2`, installed via `npm ci` from a committed lockfile); secrets hygiene (`.gitignore`, env‑based keys, OAuth); telemetry content suppression (`app_utils/telemetry.py`); SAST in CI (`.github/workflows/` — Bandit, CodeQL, Gitleaks, Trivy, Checkov, OSV-Scanner, Dependency Review); hash‑locked, reproducible dependencies (`uv.lock` + `uv sync --frozen`); STRIDE `threat_model.md` + `SECURITY.md` |
+| **Deployability** | ✅ Code/Video | `Dockerfile` (Cloud Run–ready, Node runtime + `npm ci` for the pinned MCP server), `fast_api_app.py`, `app_utils/services.py` (GCS + Vertex services), `app_utils/telemetry.py` (Cloud Trace/Logging), `agents-cli deploy`, and full **Terraform IaC** in `deployment/terraform/` (Cloud Run + least‑privilege service account + Secret Manager + GCS/BigQuery, authenticated‑invoker by default) |
 | **Agent skills (Agents CLI)** | ✅ Code/Video | `agents-cli-manifest.yaml`, `GEMINI.md`, and a full evaluation suite under `tests/eval/` driven by `agents-cli eval` — an **LLM‑as‑judge** quality grader (`metrics.py`) plus a deterministic **`tool_trajectory_check`** that verifies the correct tool fired (e.g. `quarantine_document` on the injection case), alongside the pytest **unit tests** in `tests/unit/` |
 | **Antigravity** | 🎥 Video | `GEMINI.md` pre‑configures the project for Antigravity / Gemini‑CLI‑assisted development; shown in the accompanying video |
 
@@ -197,7 +196,7 @@ The capstone asks for **at least three** key concepts. MedFriend demonstrates **
 
 | Rubric item | How MedFriend addresses it |
 |-------------|----------------------------|
-| **Technical implementation (50)** | Multi‑agent orchestration with `AgentTool`; a real MCP server over stdio; multimodal intake (text/PDF/image/audio); 13 tools including three third‑party integrations (Maps MCP, Gmail, Bland.ai); A2A interoperability; and clever, non‑obvious tool use (stateless counterparties that make multi‑turn negotiation deterministic; treating an inbound *email body* as an untrusted document). Code is heavily commented at the design level — see the block comments in `agent.py` explaining the `AgentTool` choice, the Gmail security posture, and the Bland.ai Cloudflare work‑around. |
+| **Technical implementation (50)** | Multi‑agent orchestration with `AgentTool`; a real MCP server over stdio (integrity‑pinned via `npm ci`); multimodal intake (text/PDF/image/audio); 13 tools including three third‑party integrations (Maps MCP, Gmail, Bland.ai); A2A interoperability; and clever, non‑obvious tool use (stateless counterparties that make multi‑turn negotiation deterministic; treating an inbound *email body* as an untrusted document). Code is heavily commented at the design level — see the block comments in `agent.py` explaining the `AgentTool` choice, the Gmail security posture, and the Bland.ai Cloudflare work‑around. |
 | **Documentation (20)** | This README (problem, solution, architecture + diagram, setup, security), `GEMINI.md` (AI‑assisted dev guide), `tests/eval/datasets/README.md` (eval format), and thorough in‑code docstrings/comments. |
 | **🚨 No secrets in code** | Verified: no keys or tokens in the working tree **or** git history. Every secret is read from an environment variable or a git‑ignored file path; `credentials.json`, `token.json`, `api_key.txt`, `*.pem`, and `*-key.json` are all in `.gitignore`. |
 
@@ -224,7 +223,7 @@ The two layers are deliberately different in kind — Layer 1 is robust but rigi
 
 **Telemetry that doesn't leak prompts.** `app_utils/telemetry.py` pins `ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS=false` and, when GenAI logging is enabled, uses `NO_CONTENT` (metadata only) so prompts/responses don't land in trace spans.
 
-**Least privilege for third‑party code.** The Google Maps MCP server is an npm package launched via `npx` as a subprocess. Rather than hand it the full environment, `_scoped_maps_env()` strips MedFriend's own secrets and passes it only `GOOGLE_MAPS_API_KEY`, so a compromised MCP package can't read the Bland.ai key, Gmail token path, or GCP credentials.
+**Least privilege + supply‑chain integrity for third‑party code.** The Google Maps MCP server is a third‑party npm package, so it gets two independent protections. First, **supply‑chain integrity**: it's pinned to `@modelcontextprotocol/server-google-maps@0.6.2` and installed from a committed, integrity‑locked lockfile (`package.json` + `package-lock.json`, `npm ci`), verified by its SHA‑512 hash and launched directly from `node_modules` — never fetched at runtime with `npx` — so neither an unpinned `latest` nor a tampered tarball can be pulled. Second, **least privilege**: rather than hand the subprocess the full environment, `_scoped_maps_env()` strips MedFriend's own secrets and passes it only `GOOGLE_MAPS_API_KEY`, so even a compromised package can't read the Bland.ai key, Gmail token path, or GCP credentials.
 
 **Static analysis in CI.** The `.github/workflows/` directory runs **Bandit** (Python SAST), **CodeQL** (security‑extended), and **Dependency Review** on every push/PR and weekly, uploading results to the GitHub Security tab. **Gitleaks** (secret scanning), **Trivy** (container/filesystem CVEs), **Checkov** (Terraform/IaC misconfiguration), and **OSV-Scanner** (dependency vulnerabilities) run as additional CI workflows — matching the badges at the top of this README. `.pre-commit-config.yaml` adds commit‑time **secret detection** (`detect-secrets`, `detect-private-key`) and linting as a backstop to the `.gitignore` rule.
 
@@ -242,7 +241,7 @@ The two layers are deliberately different in kind — Layer 1 is robust but rigi
 
 - **Google ADK** (`google-adk[gcp]`) — agents, tools, runner, web UI, eval, deployment
 - **Gemini 2.5 Flash** — root agent and counterparty sub‑agents
-- **Model Context Protocol** — Google Maps MCP server via `McpToolset` over stdio
+- **Model Context Protocol** — Google Maps MCP server (`@0.6.2`, `npm ci`‑pinned) via `McpToolset` over stdio
 - **A2A SDK** (`a2a-sdk`) — agent‑to‑agent interoperability (agent card + JSON‑RPC)
 - **FastAPI + Uvicorn** — serving surface
 - **Gmail API** (`google-api-python-client`, `google-auth-oauthlib`) — ambient email
@@ -280,7 +279,9 @@ MedFriend/
 ├── authorize_gmail.py              # One-time Gmail OAuth (writes a git-ignored token.json)
 ├── agents-cli-manifest.yaml        # agents-cli project manifest
 ├── GEMINI.md                       # AI-assisted development guide (Antigravity / Gemini CLI)
-├── Dockerfile                      # Cloud Run-ready image (Python + Node runtime for the MCP server)
+├── Dockerfile                      # Cloud Run-ready image (Python + Node; `npm ci` installs the pinned MCP server)
+├── package.json                    # Pinned MCP server(s) launched over stdio (npm)
+├── package-lock.json               # Integrity-locked npm deps (`npm ci`, SHA-512 verified)
 ├── pyproject.toml                  # Dependencies and tooling (uv, ruff, ty, pytest, eval)
 └── .env.example                    # Configuration template
 ```
@@ -294,7 +295,7 @@ MedFriend/
 - **[uv](https://docs.astral.sh/uv/getting-started/installation/)** — Python package manager used for everything here
 - **[agents‑cli](https://google.github.io/agents-cli/)** — `uv tool install google-agents-cli`
 - **Python 3.11–3.13**
-- **Node.js 18+** (provides `npx`) — required only for the Google Maps MCP server
+- **Node.js 18+** — required for the Google Maps MCP server (run `npm ci` once to install the pinned server before first use)
 - A **Gemini API key** (Google AI Studio) *or* a **Google Cloud project** with Vertex AI enabled
 
 ### 1. Install dependencies
@@ -302,6 +303,7 @@ MedFriend/
 ```bash
 uvx google-agents-cli setup     # first time only
 agents-cli install              # installs the project's dependencies with uv
+npm ci                          # installs the pinned Google Maps MCP server (integrity-verified)
 ```
 
 ### 2. Configure
@@ -404,7 +406,7 @@ docker build -t medfriend .
 docker run -p 8080:8080 --env-file .env medfriend
 ```
 
-The image installs a Node runtime alongside Python so the Google Maps MCP server (`npx …`) works inside the container. Gmail and Bland features additionally require their respective credentials/keys at runtime.
+The image installs a Node runtime alongside Python and runs `npm ci` to install the integrity‑pinned Google Maps MCP server (`@0.6.2`) from the committed lockfile, so the exact server is baked into the image rather than fetched at runtime with `npx`. Gmail and Bland features additionally require their respective credentials/keys at runtime.
 
 **Managed (Vertex AI Agent Engine via agents‑cli):**
 

@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --frozen
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # `npm ci` fails if package.json and package-lock.json disagree (npm-side
+      # equivalent of `uv sync --frozen`) and verifies each package's SHA-512 hash.
+      - name: Install pinned MCP server (npm ci)
+        run: npm ci --omit=dev
+
+      - name: Check formatting (ruff)
+        run: uv run ruff format --check .
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      - name: Run unit & integration tests
+        env:
+          # Use the Gemini Developer API (AI Studio) with the key — never Vertex/ADC.
+          GOOGLE_GENAI_USE_VERTEXAI: "False"
+          # Runs the @pytest.mark.live tests. conftest auto-skips them when the key
+          # is empty (e.g. PRs from forks, where GitHub withholds secrets), so a
+          # missing key never turns the build red.
+          RUN_LIVE_TESTS: "1"
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BLAND_API_KEY: dummy
+          GOOGLE_MAPS_API_KEY: dummy
+        run: uv run pytest tests/unit tests/integration

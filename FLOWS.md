@@ -157,6 +157,10 @@ output, and action. They are intentionally redundant.
    • Least privilege: _scoped_maps_env() strips MedFriend's secrets before the
      Maps MCP subprocess starts — a compromised npm package can't read the
      Bland/Gmail/GCP credentials.
+   • Supply-chain integrity: the Maps MCP server is pinned to
+     @modelcontextprotocol/server-google-maps@0.6.2 and installed from a committed,
+     integrity-locked lockfile (npm ci), so an unpinned or tampered release cannot
+     be pulled at runtime.
    • Data minimization: only location+specialty to Maps; only scheduling details
      to the office; replies go only to the original denial sender.
    • Telemetry suppression: prompt/response content kept OUT of trace spans
@@ -294,7 +298,7 @@ item 5).
         ▼
   (Google Maps MCP over stdio)  ── geocode ZIP ──▶ search nearby providers
         │        ▲
-        │        └── launched via npx with _scoped_maps_env():
+        │        └── launched from node_modules (npm ci-pinned) with _scoped_maps_env():
         │            ONLY GOOGLE_MAPS_API_KEY is passed in; MedFriend's own
         │            secrets are stripped from the subprocess environment
         ▼
@@ -459,7 +463,7 @@ one.
 | Layer 1 deterministic screen | `care_navigator/security.py`; `security_prefilter_callback` + `_apply_security_prefilter` in `agent.py` |
 | Layer 2 quarantine store | `quarantine_document` / `list_quarantine` / `discard_quarantine` + intake rules 3–4 |
 | Appeal / booking / complaint / email flows | `INSTRUCTION` rules 5–9; sub-agents `insurance_reviewer`, `provider_office` |
-| Live provider search | `maps_mcp` (`McpToolset` over stdio) + `_scoped_maps_env()` |
+| Live provider search | `maps_mcp` (`McpToolset` over stdio, `@0.6.2`-pinned via `npm ci`) + `_scoped_maps_env()` |
 | LLM-as-a-Judge checkpoint | `care_navigator/plugins/agent_as_a_judge.py` (+ `prompts.py`) |
 | Approval gates | encoded in `INSTRUCTION`; enforced by the tool-call boundary |
 | Behavior is pinned by tests | `tests/unit/test_case_tools.py`, `tests/unit/test_security.py`, `tests/eval/datasets/mednav_eval.json` |
