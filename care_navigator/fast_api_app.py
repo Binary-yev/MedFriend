@@ -31,7 +31,7 @@ from care_navigator.app_utils.telemetry import setup_telemetry
 from care_navigator.app_utils.typing import Feedback
 
 if os.getenv("INTEGRATION_TEST") != "TRUE":
-    load_dotenv()
+    load_dotenv(".env.local")
     setup_telemetry()
     _, project_id = google.auth.default()
     logging_client = google_cloud_logging.Client()

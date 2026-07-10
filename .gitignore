@@ -223,3 +223,4 @@ gcloud_help.txt
 /artifacts/
 
 deployment/terraform/**/vars/*.tfvars
+.env.local

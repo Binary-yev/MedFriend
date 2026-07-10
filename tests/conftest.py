@@ -4,7 +4,7 @@ import pytest
 from dotenv import load_dotenv
 
 # Load .env file before any tests or imports run
-load_dotenv()
+load_dotenv(".env.local")
 
 
 def _have_real_key() -> bool:
