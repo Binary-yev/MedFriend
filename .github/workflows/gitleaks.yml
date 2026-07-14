@@ -2,11 +2,12 @@ name: Gitleaks Scan
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
   schedule:
     - cron: "0 8 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -1,0 +1,15 @@
+# Gitleaks false positives, ignored by exact finding fingerprint
+# (format: <commit>:<path>:<rule>:<line> — scoped to one finding each, so a
+# real secret in any other commit/file/line still fails the scan).
+#
+# .github/workflows/eval.yml wrote a placeholder service-account JSON to disk so
+# the Vertex AI client would initialize in CI. The "private key" is a truncated
+# PKCS#8 header (~52 chars vs ~1700 for a real RSA key), project_id "dummy",
+# client_email dummy@dummy.iam.gserviceaccount.com. It never authenticated
+# against anything. The gitleaks private-key rule matches the BEGIN PRIVATE KEY
+# marker regardless of whether the payload is a valid key, hence the hit.
+#
+# The workflow itself was deleted in b593142, but these commits remain in history
+# and a full-history scan (what the weekly schedule runs) keeps re-finding them.
+0b061435e61c4a8840e18134e105abde07e40406:.github/workflows/eval.yml:private-key:32
+6e0a861310d602dd7dabbbfd01d16b25a83daee5:.github/workflows/eval.yml:private-key:32
