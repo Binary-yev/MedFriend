@@ -1,0 +1,64 @@
+name: Threat Model Gate
+
+# Enforces the STRIDE Threat-Model Gate defined in .agents/CONTEXT.md: if a pull
+# request changes MedFriend's attack surface (an entry point, a tool, a callback,
+# the security pre-filter, or the guardrail plugins) it MUST also update
+# threat_model.md in the same PR. This keeps the STRIDE assessment honest and
+# current instead of drifting away from the code it describes.
+#
+# Escape hatch: add the label `threat-model-not-needed` to the PR (for a change
+# that touches a watched file but genuinely does not alter the attack surface,
+# e.g. a comment-only or logging tweak) to pass the gate deliberately.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  threat-model-gate:
+    name: Require threat_model.md update on surface changes
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'threat-model-not-needed') }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for threat_model.md update
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # Files whose change widens/alters the attack surface. Keep in sync with
+          # the boundaries enumerated in threat_model.md and .agents/CONTEXT.md.
+          SURFACE_REGEX='^(care_navigator/agent\.py|care_navigator/fast_api_app\.py|care_navigator/security\.py|care_navigator/plugins/)'
+
+          changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          echo "Changed files in this PR:"
+          echo "$changed" | sed 's/^/  /'
+
+          surface_changed="$(echo "$changed" | grep -E "$SURFACE_REGEX" || true)"
+          tm_changed="$(echo "$changed" | grep -E '^threat_model\.md$' || true)"
+
+          if [ -n "$surface_changed" ] && [ -z "$tm_changed" ]; then
+            echo ""
+            echo "::error::Attack-surface files changed but threat_model.md was not updated."
+            echo "The following surface files changed:"
+            echo "$surface_changed" | sed 's/^/  - /'
+            echo ""
+            echo "Refresh the STRIDE assessment (run the 'stride-threat-model' skill in"
+            echo ".agents/skills/) and commit the threat_model.md update in this PR, or add"
+            echo "the 'threat-model-not-needed' label if this change does not affect the"
+            echo "attack surface. See .agents/CONTEXT.md -> STRIDE Threat-Model Gate."
+            exit 1
+          fi
+
+          echo ""
+          echo "Threat Model Gate passed."

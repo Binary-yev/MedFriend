@@ -167,6 +167,10 @@ output, and action. They are intentionally redundant.
      (ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS=false / NO_CONTENT).
    • Secrets hygiene: env-based keys, patient-owned Gmail OAuth, .gitignore +
      pre-commit detect-secrets; SAST (Bandit + CodeQL) in CI.
+   • Dev-lifecycle governance (outside the runtime path entirely): the STRIDE
+     assessment is kept current by a CI threat-model gate + regeneration skill,
+     and a pre-tool hook blocks destructive shell commands from the coding agent
+     (.agents/ — see §"Where each behavior lives in the code").
 ```
 
 > Note on Checkpoint 3: the judge deliberately runs on `model_output` and
@@ -467,3 +471,5 @@ one.
 | LLM-as-a-Judge checkpoint | `care_navigator/plugins/agent_as_a_judge.py` (+ `prompts.py`) |
 | Approval gates | encoded in `INSTRUCTION`; enforced by the tool-call boundary |
 | Behavior is pinned by tests | `tests/unit/test_case_tools.py`, `tests/unit/test_security.py`, `tests/eval/datasets/mednav_eval.json` |
+| STRIDE threat-model gate (dev lifecycle) | `.agents/CONTEXT.md`, `.agents/skills/stride-threat-model/`, `.github/workflows/threat-model-gate.yml` |
+| Destructive-command block (dev lifecycle) | `.agents/hooks.json` → `.agents/scripts/validate_tool_call.py` |
