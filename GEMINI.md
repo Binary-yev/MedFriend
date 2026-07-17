@@ -9,6 +9,18 @@ uv tool install google-agents-cli
 
 ---
 
+## Security & Planning Gates
+
+Before building, read [`.agents/CONTEXT.md`](.agents/CONTEXT.md) — it defines
+MedFriend's Core Paved Roads and two mandatory gates:
+- **STRIDE Threat-Model Gate**: any change that widens the attack surface (a new
+  entry point, tool, external integration, or data store) must refresh
+  [`threat_model.md`](threat_model.md) via the `stride-threat-model` skill
+  (`.agents/skills/stride-threat-model/`) and update the affected pillar's status.
+- **TDD Planning Gate**: every implementation plan must include a **Security
+  Boundaries & Assertions** section mapping the feature's abuse vectors to STRIDE
+  and naming the control that mitigates each — written before any code.
+
 ## Development Phases
 
 ### Phase 1: Understand Requirements

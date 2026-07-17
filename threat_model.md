@@ -183,3 +183,31 @@ logging. The remaining open items are **hard rate-limiting**, a dedicated
 **append-only action log**, and **per-session (multi-user) state** — appropriate
 to add when moving from the hackathon demo to a hosted service, and tracked in
 the README roadmap.
+
+---
+
+## Keeping this assessment current (governance)
+
+This document is a maintained assessment, not a write-once artifact. A
+development-lifecycle gate (defined in `.agents/CONTEXT.md`) keeps it honest:
+
+- **Regeneration skill** — `.agents/skills/stride-threat-model/` walks the
+  codebase across all six pillars and refreshes the sections above, preserving
+  the ✅/🟡/⬜ status convention and requiring each status to cite real code.
+- **CI gate** — `.github/workflows/threat-model-gate.yml` fails any pull request
+  that changes an attack-surface file (`care_navigator/agent.py`,
+  `fast_api_app.py`, `security.py`, or `plugins/`) without updating this file in
+  the same PR, so the assessment cannot silently drift from the code. (A change
+  that touches those files but genuinely does not alter the surface can bypass the
+  gate with the `threat-model-not-needed` PR label.)
+- **TDD Planning Gate** — every feature plan must include a *Security Boundaries &
+  Assertions* section mapping the feature's abuse vectors to the pillars above
+  before any code is written.
+- **Destructive-command hook** — a supporting development-time control
+  (`.agents/hooks.json` → `.agents/scripts/validate_tool_call.py`) blocks
+  destructive shell commands from the coding agent; it protects the developer
+  environment, distinct from the runtime, patient-facing threats analyzed above.
+
+Note that the CI gate proves this document was *updated* alongside a surface
+change; it does not prove the analysis is *correct* — that remains the job of code
+review and the regeneration skill.

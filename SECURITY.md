@@ -67,7 +67,14 @@ MedFriend's security design is documented in detail in the README
 - **Telemetry content suppression** — prompt/response content is kept out of
   trace spans (`care_navigator/app_utils/telemetry.py`).
 - **Static analysis in CI** — Bandit, CodeQL (security-extended), and Dependency
-  Review run on every push/PR and weekly (`.github/workflows/security.yml`).
+  Review run on every push/PR and weekly, alongside Gitleaks, Trivy, Checkov, and
+  OSV-Scanner (see `.github/workflows/`).
+- **STRIDE threat-model gate** — the assessment in `threat_model.md` is kept in
+  sync with the code by a development-lifecycle gate (`.agents/CONTEXT.md`): a
+  reusable `stride-threat-model` skill regenerates it, a CI workflow
+  (`.github/workflows/threat-model-gate.yml`) fails any PR that changes an
+  attack-surface file without updating `threat_model.md`, and a pre-tool hook
+  (`.agents/hooks.json`) blocks destructive shell commands from the coding agent.
 
 ## Known limitations
 
