@@ -19,7 +19,7 @@ via Node. Model each of those channels explicitly.
 1. **Analyze system boundaries.** Map, from the actual code, the entry points and
    data flows before judging anything:
    - Transport: FastAPI + A2A endpoints (`care_navigator/fast_api_app.py`).
-   - Agent engine: the root `care_navigator` agent, its `AgentTool` sub-agents,
+   - Agent runtime: the root `care_navigator` agent, its `AgentTool` sub-agents,
      and its 13 tools (`care_navigator/agent.py`).
    - Trust boundary — untrusted input: pasted text, uploaded PDFs/images, audio,
      and inbound email bodies are all attacker-controllable.

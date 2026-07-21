@@ -15,7 +15,7 @@ the analysis is correspondingly detailed.
 - **Client / transport:** FastAPI endpoints (`/run_sse`, `/apps/care_navigator/...`,
   `/feedback`) and A2A JSON-RPC + agent card (`/a2a/care_navigator/...`), served
   by `care_navigator/fast_api_app.py`.
-- **Agent engine:** the root `care_navigator` agent (Gemini 2.5 Flash) with 13
+- **Agent runtime:** the root `care_navigator` agent (Gemini 2.5 Flash) with 13
   tools, plus two `AgentTool` sub-agents (`insurance_reviewer`, `provider_office`).
 - **Trust boundary — untrusted input:** pasted text, uploaded PDFs/images, audio,
   and **inbound email bodies** are all attacker-controllable content.
