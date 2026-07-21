@@ -67,10 +67,10 @@ MedFriend is a **multi‑agent system on Google's Agent Development Kit (ADK)**.
 - **Root agent (`care_navigator`)** — Gemini 2.5 Flash with a retry policy. It holds the whole operating policy in its `INSTRUCTION` (tool‑routing rules, the document‑intake state machine, the quarantine lifecycle, and each approval‑gated flow) and decides which of its 13 tools to call.
 - **`insurance_reviewer` / `provider_office` (sub‑agents via `AgentTool`)** — deliberately **stateless deciders** that key off the message they receive. This is what makes multi‑turn flows reliable: the scheduling office *always* rejects the first request and counter‑offers its own slots, then books only when the patient confirms one of those slots — so the "negotiate then confirm" interrupt is deterministic rather than accidental.
 - **Local case tools** — plan‑fact lookups (`get_benefits`, `get_insurance_profile`), the trusted document store (`save_document` / `list_documents`), and the quarantine / dead‑letter store (`quarantine_document` / `list_quarantine` / `discard_quarantine`).
-- **Google Maps MCP server** — the `@modelcontextprotocol/server-google-maps` reference server pinned to `@0.6.2`, run over **stdio** via ADK's `McpToolset` for live provider search. It's installed from an integrity‑locked lockfile (`npm ci`) and launched directly from `node_modules` — never fetched at runtime with `npx`.
+- **Google Maps MCP server** — the `@modelcontextprotocol/server-google-maps` reference server pinned to `@0.6.2` (a deprecated upstream, with overrides forcing the SDK forward past three advisories), run over **stdio** via ADK's `McpToolset` for live provider search. It's installed from an integrity‑locked lockfile (`npm ci`) and launched directly from `node_modules` — never fetched at runtime with `npx`.
 - **Gmail API** — ambient inbox check and outbound send, authorized with the **patient's own OAuth** (see `authorize_gmail.py`). Used directly rather than through a community Gmail MCP server because those needed Node ≥ 22 and were unreliable in this environment.
 - **Bland.ai** — places an outbound phone call whose AI voice reads an *approved* complaint to a *patient‑supplied* number.
-- **Serving + platform layer (`fast_api_app.py`, `app_utils/`)** — a FastAPI app that serves the ADK web playground **and** [A2A protocol](https://a2a-protocol.org/) endpoints (dynamic agent card + JSON‑RPC), with OpenTelemetry export to Cloud Trace/Logging and pluggable session/artifact services (in‑memory locally; GCS + Vertex in the cloud).
+- **Serving + platform layer (`fast_api_app.py`, `app_utils/`)** — a FastAPI app that serves the ADK web playground **and** [A2A protocol](https://a2a-protocol.org/) endpoints (dynamic agent card + JSON‑RPC), with OpenTelemetry export to Cloud Trace/Logging and pluggable session/artifact services (in‑memory locally; GCS + Gemini Enterprise Agent Platform in the cloud).
 
 - **Runtime safety judge (`plugins/agent_as_a_judge.py`)** — a separate `gemini-2.5-flash-lite` guardian agent, wrapped as an ADK `App` plugin (`LlmAsAJudge`). It inspects the root agent's **model output** and **every tool call before it fires**, and blocks anything its jailbreak-detection rubric (`plugins/prompts.py`) flags as unsafe. This is a third safety layer that sits *around* the agent, independent of — and downstream of — the two input-side layers in `security.py` and the quarantine store.
 
@@ -188,9 +188,9 @@ The capstone asks for **at least three** key concepts. MedFriend demonstrates **
 | **Agent / multi‑agent system (ADK)** | ✅ Code | `care_navigator/agent.py` — root `Agent` (`care_navigator`) orchestrating two `LlmAgent` sub‑agents (`insurance_reviewer`, `provider_office`) via `AgentTool`; wrapped in an ADK `App` |
 | **MCP server** | ✅ Code | `care_navigator/agent.py` — `maps_mcp = McpToolset(StdioServerParameters(command="node", args=[node_modules/@modelcontextprotocol/server-google-maps/dist/index.js]))`, pinned to `@0.6.2` and installed via `npm ci` |
 | **Security features** | ✅ Code | **Two‑layer prompt‑injection defense** — deterministic PII scrub + signature detection (`care_navigator/security.py`, wired into `check_new_mail` and the root agent's `before_model_callback`) *plus* semantic quarantine store (`quarantine_document` + intake rules 3–4); an **LLM‑as‑a‑Judge** guardrail on the agent's output and tool calls (`plugins/agent_as_a_judge.py`); approval gates on every outbound action; data minimization; least‑privilege MCP subprocess env; **integrity‑pinned** MCP server (`@modelcontextprotocol/server-google-maps@0.6.2`, installed via `npm ci` from a committed lockfile); secrets hygiene (`.gitignore`, env‑based keys, OAuth); telemetry content suppression (`app_utils/telemetry.py`); SAST in CI (`.github/workflows/` — Bandit, CodeQL, Gitleaks, Trivy, Checkov, OSV-Scanner, Dependency Review); hash‑locked, reproducible dependencies (`uv.lock` + `uv sync --frozen`); STRIDE `threat_model.md` + `SECURITY.md`; a **STRIDE threat‑model gate** in the dev lifecycle (`.agents/` regeneration skill + `threat-model-gate.yml` CI gate that fails a PR widening the attack surface without refreshing the model + destructive‑command pre‑tool hook) |
-| **Deployability** | ✅ Code/Video | `Dockerfile` (Cloud Run–ready, Node runtime + `npm ci` for the pinned MCP server), `fast_api_app.py`, `app_utils/services.py` (GCS + Vertex services), `app_utils/telemetry.py` (Cloud Trace/Logging), `agents-cli deploy`, and full **Terraform IaC** in `deployment/terraform/` (Cloud Run + least‑privilege service account + Secret Manager + GCS/BigQuery, authenticated‑invoker by default) |
+| **Deployability** | ✅ Code/Video | `Dockerfile` (Cloud Run–ready, Node runtime + `npm ci` for the pinned MCP server), `fast_api_app.py`, `app_utils/services.py` (GCS + Gemini Enterprise Agent Platform services), `app_utils/telemetry.py` (Cloud Trace/Logging), `agents-cli deploy`, and full **Terraform IaC** in `deployment/terraform/` (Cloud Run + least‑privilege service account + Secret Manager + GCS/BigQuery, authenticated‑invoker by default) |
 | **Agent skills (Agents CLI)** | ✅ Code/Video | `agents-cli-manifest.yaml`, `GEMINI.md`, and a full evaluation suite under `tests/eval/` driven by `agents-cli eval` — an **LLM‑as‑judge** quality grader (`metrics.py`) plus a deterministic **`tool_trajectory_check`** that verifies the correct tool fired (e.g. `quarantine_document` on the injection case), alongside the pytest **unit tests** in `tests/unit/` |
-| **Antigravity** | 🎥 Video | `GEMINI.md` pre‑configures the project for Antigravity / Gemini‑CLI‑assisted development; shown in the accompanying video |
+| **Antigravity** | 🎥 Video | `GEMINI.md` pre‑configures the project for Antigravity-assisted development; shown in the accompanying video |
 
 ### Category 2 — Implementation (70 pts)
 
@@ -223,7 +223,7 @@ The two layers are deliberately different in kind — Layer 1 is robust but rigi
 
 **Telemetry that doesn't leak prompts.** `app_utils/telemetry.py` pins `ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS=false` and, when GenAI logging is enabled, uses `NO_CONTENT` (metadata only) so prompts/responses don't land in trace spans.
 
-**Least privilege + supply‑chain integrity for third‑party code.** The Google Maps MCP server is a third‑party npm package, so it gets two independent protections. First, **supply‑chain integrity**: it's pinned to `@modelcontextprotocol/server-google-maps@0.6.2` and installed from a committed, integrity‑locked lockfile (`package.json` + `package-lock.json`, `npm ci`), verified by its SHA‑512 hash and launched directly from `node_modules` — never fetched at runtime with `npx` — so neither an unpinned `latest` nor a tampered tarball can be pulled. Second, **least privilege**: rather than hand the subprocess the full environment, `_scoped_maps_env()` strips MedFriend's own secrets and passes it only `GOOGLE_MAPS_API_KEY`, so even a compromised package can't read the Bland.ai key, Gmail token path, or GCP credentials.
+**Least privilege + supply‑chain integrity for third‑party code.** The Google Maps MCP server is a third‑party npm package, so it gets two independent protections. First, **supply‑chain integrity**: it's pinned to `@modelcontextprotocol/server-google-maps@0.6.2` (a deprecated upstream, with overrides forcing the SDK forward past three advisories) and installed from a committed, integrity‑locked lockfile (`package.json` + `package-lock.json`, `npm ci`), verified by its SHA‑512 hash and launched directly from `node_modules` — never fetched at runtime with `npx` — so neither an unpinned `latest` nor a tampered tarball can be pulled. Second, **least privilege**: rather than hand the subprocess the full environment, `_scoped_maps_env()` strips MedFriend's own secrets and passes it only `GOOGLE_MAPS_API_KEY`, so even a compromised package can't read the Bland.ai key, Gmail token path, or GCP credentials.
 
 **Static analysis in CI.** The `.github/workflows/` directory runs **Bandit** (Python SAST), **CodeQL** (security‑extended), and **Dependency Review** on every push/PR and weekly, uploading results to the GitHub Security tab. **Gitleaks** (secret scanning), **Trivy** (container/filesystem CVEs), **Checkov** (Terraform/IaC misconfiguration), and **OSV-Scanner** (dependency vulnerabilities) run as additional CI workflows — matching the badges at the top of this README. `.pre-commit-config.yaml` adds commit‑time **secret detection** (`detect-secrets`, `detect-private-key`) and linting as a backstop to the `.gitignore` rule.
 
@@ -248,7 +248,7 @@ The two layers are deliberately different in kind — Layer 1 is robust but rigi
 - **FastAPI + Uvicorn** — serving surface
 - **Gmail API** (`google-api-python-client`, `google-auth-oauthlib`) — ambient email
 - **Bland.ai** — outbound voice calls (stdlib HTTP, no extra dependency)
-- **OpenTelemetry → Cloud Trace / Cloud Logging**, **GCS**, **Vertex AI** — observability and cloud services
+- **OpenTelemetry → Cloud Trace / Cloud Logging**, **GCS**, **Gemini Enterprise Agent Platform** — observability and cloud services
 - **uv** + **agents‑cli** — dependency management, playground, eval, deploy
 - **pytest** + **ADK eval** — unit, integration, and behavioral tests
 
@@ -266,7 +266,7 @@ MedFriend/
 │   ├── fast_api_app.py             # FastAPI serving surface (ADK web UI + A2A + feedback endpoint)
 │   └── app_utils/
 │       ├── a2a.py                  # Attaches A2A agent-card + JSON-RPC routes
-│       ├── services.py             # Session/artifact services (in-memory - GCS - Vertex)
+│       ├── services.py             # Session/artifact services (in-memory - GCS - Gemini Enterprise Agent Platform)
 │       ├── telemetry.py            # OpenTelemetry to Cloud Trace/Logging (prompt content suppressed)
 │       └── typing.py               # Pydantic models (feedback)
 ├── tests/
@@ -281,7 +281,7 @@ MedFriend/
 ├── .pre-commit-config.yaml         # Commit-time secret detection + lint + SAST
 ├── authorize_gmail.py              # One-time Gmail OAuth (writes a git-ignored token.json)
 ├── agents-cli-manifest.yaml        # agents-cli project manifest
-├── GEMINI.md                       # AI-assisted development guide (Antigravity / Gemini CLI)
+├── GEMINI.md                       # AI-assisted development guide (Antigravity)
 ├── Dockerfile                      # Cloud Run-ready image (Python + Node; `npm ci` installs the pinned MCP server)
 ├── package.json                    # Pinned MCP server(s) launched over stdio (npm)
 ├── package-lock.json               # Integrity-locked npm deps (`npm ci`, SHA-512 verified)
@@ -299,7 +299,7 @@ MedFriend/
 - **[agents‑cli](https://google.github.io/agents-cli/)** — `uv tool install google-agents-cli`
 - **Python 3.11–3.13**
 - **Node.js 18+** — required for the Google Maps MCP server (run `npm ci` once to install the pinned server before first use)
-- A **Gemini API key** (Google AI Studio) *or* a **Google Cloud project** with Vertex AI enabled
+- A **Gemini API key** (Google AI Studio) *or* a **Google Cloud project** with Gemini Enterprise Agent Platform enabled
 
 ### 1. Install dependencies
 
@@ -323,7 +323,7 @@ cp .env.example .env
 # Option A — Google AI Studio
 GEMINI_API_KEY=your-api-key-here
 
-# Option B — Vertex AI (default in the template)
+# Option B — Gemini Enterprise Agent Platform (default in the template)
 GOOGLE_GENAI_USE_VERTEXAI=true
 GOOGLE_CLOUD_PROJECT=your-gcp-project-id
 GOOGLE_CLOUD_LOCATION=global
@@ -391,7 +391,7 @@ agents-cli eval grade          # grade the traces
 The suite lives in `tests/eval/`:
 
 - `datasets/mednav_eval.json` — nine scenario cases covering tool routing, clean intake, **injection defense**, the quarantine lifecycle, and profile/benefit lookups.
-- `metrics.py` — a local **LLM‑as‑judge** (deterministic, schema‑constrained JSON) that works on both Vertex and AI Studio and grades against each case's ground‑truth `reference`.
+- `metrics.py` — a local **LLM‑as‑judge** (deterministic, schema‑constrained JSON) that works on both Gemini Enterprise Agent Platform and AI Studio and grades against each case's ground‑truth `reference`.
 - `eval_config.yaml` — wires in a **`tool_trajectory_check`** metric that asserts the agent called the *expected* tool (e.g. that the injection case actually triggered `quarantine_document`).
 
 Once you have a baseline, `agents-cli eval compare` (regression diffs), `analyze` (cluster failures), and `optimize` (auto‑tune prompts) are available.
