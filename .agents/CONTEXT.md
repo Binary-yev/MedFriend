@@ -48,12 +48,20 @@ that justifies it. A pull request that widens the attack surface without a
 corresponding `threat_model.md` update does not pass this gate.
 
 This gate is enforced in CI by
-[`.github/workflows/threat-model-gate.yml`](../.github/workflows/threat-model-gate.yml):
-a PR that touches a watched surface file (`care_navigator/agent.py`,
-`fast_api_app.py`, `security.py`, or `plugins/`) without updating
-`threat_model.md` fails the build. For a change that touches a watched file but
-genuinely does not alter the attack surface (e.g. a comment or logging tweak),
-add the `threat-model-not-needed` label to the PR to pass deliberately.
+[`.github/workflows/threat-model-gate.yml`](../.github/workflows/threat-model-gate.yml).
+The check is a path-coupling heuristic, not a diff analysis: a PR that touches a
+watched surface path without also updating `threat_model.md` fails the build. The
+watched paths are the application surface — `care_navigator/agent.py`,
+`fast_api_app.py`, `security.py`, `plugins/`, and `app_utils/` (the A2A routes and
+the shared session/artifact services) — plus the deployment surface:
+`deployment/terraform/` (IAM, incl. the `public_invoker`/`allUsers` binding),
+`Dockerfile`, `package.json`/`package-lock.json`, and `authorize_gmail.py` (Gmail
+OAuth scopes). Because it keys on paths rather than understanding the diff, it
+over-fires on innocuous edits to those files and cannot catch a surface change made
+somewhere else — treat it as a reminder to refresh the assessment, not proof the
+assessment is complete. For a change that touches a watched file but genuinely does
+not alter the attack surface (e.g. a comment or logging tweak), add the
+`threat-model-not-needed` label to the PR to pass deliberately.
 
 ## TDD Planning Gate
 During the Plan phase, decompose the task into logical, modular stages. Every
