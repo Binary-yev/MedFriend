@@ -411,14 +411,14 @@ docker run -p 8080:8080 --env-file .env medfriend
 
 The image installs a Node runtime alongside Python and runs `npm ci` to install the integrity‑pinned Google Maps MCP server (`@0.6.2`) from the committed lockfile, so the exact server is baked into the image rather than fetched at runtime with `npx`. Gmail and Bland features additionally require their respective credentials/keys at runtime.
 
-**Managed (Vertex AI Agent Engine via agents‑cli):**
+**Managed (Cloud Run via agents‑cli):**
 
 ```bash
 gcloud config set project <your-project-id>
 agents-cli deploy
 ```
 
-In the cloud, `app_utils/services.py` automatically switches sessions to the **Vertex AI session service** and artifacts to **GCS** when the corresponding environment variables are present; telemetry exports to **Cloud Trace** and **Cloud Logging**.
+In the cloud, `app_utils/services.py` automatically switches artifacts to **GCS** when the corresponding environment variables are present; telemetry exports to **Cloud Trace** and **Cloud Logging**.
 
 **Infrastructure as code (Terraform).** A complete single‑project deployment is defined under [`deployment/terraform/`](deployment/terraform/). It provisions the Cloud Run service, a **dedicated least‑privilege service account** (`app_sa`, granted only the roles it needs — including `secretmanager.secretAccessor`), all three third‑party credentials as **Secret Manager** secrets injected into the container (the Gmail token mounted as a read‑only `token.json` file; the Bland.ai and Maps keys as secret env vars — none baked into the image), a **GCS** logs bucket, and **BigQuery** sinks for GenAI‑telemetry and `/feedback` logs (durable, queryable records). By default the Cloud Run service **requires an authenticated invoker** — the public `allUsers` binding is deliberately commented out in `iam.tf`, so exposing it publicly is an explicit opt‑in.
 
