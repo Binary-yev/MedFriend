@@ -1,10 +1,18 @@
 name: Threat Model Gate
 
 # Enforces the STRIDE Threat-Model Gate defined in .agents/CONTEXT.md: if a pull
-# request changes MedFriend's attack surface (an entry point, a tool, a callback,
-# the security pre-filter, or the guardrail plugins) it MUST also update
-# threat_model.md in the same PR. This keeps the STRIDE assessment honest and
-# current instead of drifting away from the code it describes.
+# request changes MedFriend's attack surface it MUST also update threat_model.md
+# in the same PR. This keeps the STRIDE assessment honest and current instead of
+# drifting away from the code it describes. "Attack surface" here spans both the
+# application code (entry points incl. the A2A routes, tools, callbacks, the
+# security pre-filter, the guardrail plugins, the shared session/artifact
+# services) and the deployment surface (Terraform/IAM, the container image, the
+# JS/MCP dependency manifests, and the Gmail OAuth authorization scopes).
+#
+# This is a path-coupling heuristic, not a diff analysis: it fires when a
+# security-relevant file changes without a matching threat_model.md update. It
+# deliberately over-fires (hence the escape hatch below) rather than risk letting
+# a surface change through unreviewed.
 #
 # Escape hatch: add the label `threat-model-not-needed` to the PR (for a change
 # that touches a watched file but genuinely does not alter the attack surface,
@@ -38,7 +46,17 @@ jobs:
 
           # Files whose change widens/alters the attack surface. Keep in sync with
           # the boundaries enumerated in threat_model.md and .agents/CONTEXT.md.
-          SURFACE_REGEX='^(care_navigator/agent\.py|care_navigator/fast_api_app\.py|care_navigator/security\.py|care_navigator/plugins/)'
+          #   care_navigator/agent.py        - agent, tools, Gmail scopes
+          #   care_navigator/fast_api_app.py - app wiring / route registration
+          #   care_navigator/security.py     - input pre-filter
+          #   care_navigator/plugins/        - guardrail plugins
+          #   care_navigator/app_utils/      - A2A routes (a2a.py) + shared
+          #                                    session/artifact services
+          #   deployment/terraform/          - IAM, public_invoker, infra surface
+          #   Dockerfile                     - system packages / container surface
+          #   package.json, package-lock.json- JS / MCP server dependencies
+          #   authorize_gmail.py             - Gmail OAuth authorization scopes
+          SURFACE_REGEX='^(care_navigator/agent\.py|care_navigator/fast_api_app\.py|care_navigator/security\.py|care_navigator/plugins/|care_navigator/app_utils/|deployment/terraform/|authorize_gmail\.py|Dockerfile$|package(-lock)?\.json$)'
 
           changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
           echo "Changed files in this PR:"
