@@ -54,6 +54,22 @@ security = [
     "pre-commit>=4.0.0",
 ]
 
+[tool.uv]
+# Parts of the google-adk[gcp] OpenTelemetry stack only ship pre-releases:
+# google-adk requires opentelemetry-resourcedetector-gcp>=1.9.0a0, and
+# opentelemetry-instrumentation-google-genai has no stable release in range.
+# uv refuses pre-releases by default, so without this a fresh `uv lock` fails
+# as unsatisfiable -- which is not hypothetical: PyPI yanked
+# opentelemetry-resourcedetector-gcp 1.13.0 ("breaks imports"), removing the
+# last stable candidate and breaking resolution on an unchanged tree.
+#
+# The narrower modes were tried and do not work here: "explicit" and
+# "if-necessary(-or-explicit)" still fail on one or other of the two packages
+# above. This does not loosen what we ship -- uv.lock pins exact versions and
+# CI installs with --frozen; it only lets the resolver consider pre-releases
+# when regenerating that lock.
+prerelease = "allow"
+
 [tool.ruff]
 line-length = 88
 target-version = "py311"
