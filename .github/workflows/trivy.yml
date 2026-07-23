@@ -17,7 +17,7 @@ jobs:
     name: Trivy (Container Scanning)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build Docker Image
         run: docker build -t medfriend:ci .
       - name: Run Trivy Vulnerability Scanner
