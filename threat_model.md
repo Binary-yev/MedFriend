@@ -195,8 +195,10 @@ development-lifecycle gate (defined in `.agents/CONTEXT.md`) keeps it honest:
   codebase across all six pillars and refreshes the sections above, preserving
   the ✅/🟡/⬜ status convention and requiring each status to cite real code.
 - **CI gate** — `.github/workflows/threat-model-gate.yml` fails any pull request
-  that changes an attack-surface file (`care_navigator/agent.py`,
-  `fast_api_app.py`, `security.py`, or `plugins/`) without updating this file in
+  that changes an attack-surface file — the application surface
+  (`care_navigator/agent.py`, `fast_api_app.py`, `security.py`, `plugins/`,
+  `app_utils/`) or the deployment surface (`deployment/terraform/`, `Dockerfile`,
+  `package.json`/`package-lock.json`, `authorize_gmail.py`) — without updating this file in
   the same PR, so the assessment cannot silently drift from the code. (A change
   that touches those files but genuinely does not alter the surface can bypass the
   gate with the `threat-model-not-needed` PR label.)
