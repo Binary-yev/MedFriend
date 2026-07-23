@@ -24,7 +24,19 @@ jobs:
           go-version: '1.22'
       - name: Install OSV-Scanner
         run: go install github.com/google/osv-scanner/cmd/osv-scanner@latest
-      - name: Export requirements.txt from uv
-        run: pip install uv && uv pip compile pyproject.toml -o requirements.txt
+      # Export the *locked* dependency set, not a fresh resolve. `uv pip compile
+      # pyproject.toml` ignored uv.lock and re-resolved against live PyPI on every
+      # run, which meant the scan could drift from the versions `uv sync --frozen`
+      # actually installs in the container -- and left the gate hostage to upstream
+      # index churn (a yank of opentelemetry-resourcedetector-gcp 1.13.0 made the
+      # resolve unsatisfiable and failed this job with no repo change). `--frozen`
+      # reads uv.lock and errors if it is stale, so what we scan is what we ship.
+      # Hashes are omitted because OSV matches on name==version; the plain list
+      # also avoids the multi-line `\` continuations in the requirements parser.
+      - name: Export requirements.txt from uv.lock
+        run: |
+          pip install uv
+          uv export --frozen --no-emit-project --no-dev \
+            --no-hashes --format requirements-txt -o requirements.txt
       - name: Run OSV-Scanner
         run: ~/go/bin/osv-scanner -L requirements.txt:requirements.txt
