@@ -19,7 +19,19 @@ FROM python:3.12-slim
 # (below), not fetched at runtime with `npx`, so a tampered or unpinned upstream
 # release cannot change what is launched. Without Node, the find-a-provider /
 # booking flows fail at runtime in-container.
+
+# Debian publishes security fixes into trixie-security/-updates well before the
+# python:3.12-slim tag is rebuilt against them, so the base layer routinely carries
+# packages whose fix is already in the archive. The Trivy gate runs with
+# `ignore-unfixed: true`, so those are exactly the findings it fails on: the
+# 2026-08-24 run reported 36 HIGHs, every one of them the util-linux source package
+# (bsdutils/libblkid1/libmount1/login/mount/...) sitting at 2.41-5 with
+# 2.41.5-0+deb13u1 already published. Upgrading at build time clears those here
+# instead of leaving the gate red until an upstream base-image refresh lands.
+# Kept inside this RUN so the lists fetched by `apt-get update` are used, then
+# dropped, within a single layer.
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 

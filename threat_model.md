@@ -157,6 +157,27 @@ the analysis is correspondingly detailed.
   `place_complaint_call` without IAM auth. Full mitigation adds per-principal
   *authorization* (not just authentication) and per-session identity binding
   before exposing the surface more broadly.
+- **Threat 6d — known-vulnerable OS packages in the container base layer
+  (supply chain):** The image builds `FROM python:3.12-slim`. Debian publishes
+  security fixes into `trixie-security`/`-updates` well before that tag is
+  rebuilt against them, so the base layer routinely ships packages whose fix is
+  already in the archive. Several such fixes are local-privilege-escalation bugs
+  in `util-linux` — CVE-2026-53613 (TOCTOU in `mount` via an ancestor-directory
+  swap) and CVE-2026-53614 (SUID `mount(8)` allowing a `nosuid`/`noexec` bypass
+  via `LIBMOUNT_FORCE_MOUNT2`) — which is precisely the pillar this section
+  covers: a foothold inside the container (the MCP subprocess of 6b being the
+  most plausible route) could be widened toward root.
+- **Status:** ✅ **Implemented.** The `Dockerfile` runs `apt-get upgrade -y`
+  alongside `apt-get update` in the base layer, so the image takes published
+  Debian security fixes at build time instead of waiting on an upstream
+  base-image rebuild. `.github/workflows/trivy.yml` enforces this independently:
+  it builds the image on every push, every pull request, and weekly, and fails
+  the job (`exit-code: 1`) on any HIGH/CRITICAL OS or library finding, with
+  `ignore-unfixed: true` scoping the gate to vulnerabilities that actually have
+  a fix available.
+- **Mitigation (further):** `apt-get upgrade` holds back any upgrade that would
+  require installing or removing a package; `dist-upgrade` is the escalation if
+  a future fix is ever silently held back that way.
 
 ---
 
@@ -174,6 +195,7 @@ the analysis is correspondingly detailed.
 | Denial of service | No rate limiting | 🟡 Partial |
 | Elevation of privilege | Quarantine escape | ✅ Implemented |
 | Elevation of privilege | MCP subprocess over-privilege | ✅ Implemented |
+| Elevation of privilege | Vulnerable OS packages in base image | ✅ Implemented |
 | Elevation of privilege | Unauthenticated privileged tools | 🟡 Partial (auth-invoker default) |
 
 The **runtime, agent-level** threats (injection, PII disclosure, over-sharing,
