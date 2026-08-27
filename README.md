@@ -14,6 +14,8 @@
 
 ![Cover](cover.svg)
 
+**[▶ Watch the demo (8 min)](https://youtu.be/XBSoY1JFFgU)** · **[View the slides](https://docs.google.com/presentation/d/1DKxSbNe8ajnLDZbIt62gmz9YxsSQuGAW/preview)**
+
 **Agentic system that guides a patient through a medical procedure — paperwork, scheduling, and insurance — while treating every inbound document as untrusted and gating every real‑world action behind explicit human approval.**
 
 > **Naming convention used throughout this repo:** **MedFriend** is the project, **MedNav** is the assistant's persona (the name it introduces itself with), and **`care_navigator`** is the ADK application/module that implements it.
