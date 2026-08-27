@@ -5,6 +5,13 @@ from google.genai import types
 
 Runner = runners.Runner
 
+# Author returned by `run_prompt` when the agent could not be reached or
+# produced no response. Callers use this to tell a genuine verdict apart from a
+# failure, rather than trying to parse the returned text.
+ERROR_AUTHOR = "SYSTEM"
+
+_NO_RESPONSE_MESSAGE = "No response from the agent."
+
 
 async def run_prompt(
     user_id: str,
@@ -13,7 +20,13 @@ async def run_prompt(
     message: types.Content,
     session_id: str | None = None,
 ) -> tuple[str, str]:
-    """Runs a prompt using the provided runner and returns the response."""
+    """Runs a prompt using the provided runner and returns the response.
+
+    Returns:
+        A `(author, text)` pair. `author` is `ERROR_AUTHOR` when the run failed
+        or yielded nothing, in which case `text` is the error detail rather than
+        an agent response.
+    """
     try:
         if session_id is not None:
             session = await runner.session_service.get_session(
@@ -37,6 +50,6 @@ async def run_prompt(
                 )
 
     except Exception as e:
-        return "SYSTEM", str(e)
+        return ERROR_AUTHOR, str(e)
 
-    return f"{runner.agent.name}", "No response from the agent."
+    return ERROR_AUTHOR, _NO_RESPONSE_MESSAGE

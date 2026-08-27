@@ -1,4 +1,11 @@
-"""Guardian plugin to run steward agents."""
+"""Guardian plugin to run steward agents.
+
+Failure policy: an evaluation that cannot reach a verdict (judge error, empty
+response) is reported as `Verdict.UNAVAILABLE` rather than being scored safe by
+default. `before_tool_callback` fails *closed* on it, because a tool call is a
+real-world action; the other hooks fail *open* and log, because blocking every
+reply whenever the judge is down would take the whole agent offline.
+"""
 
 import enum
 import logging
@@ -33,6 +40,9 @@ _UNSAFE_TOOL_OUTPUT_MESSAGE = "Unable to emit tool result due to unsafe tool out
 _MODEL_RESPONSE_REMOVED_MESSAGE = (
     "A safety filter has removed the model's response as it was deemed unsafe."
 )
+_JUDGE_UNAVAILABLE_TOOL_MESSAGE = (
+    "Unable to call tool because the safety judge is unavailable."
+)
 
 
 def _get_default_jailbreak_safety_agent() -> LlmAgent:
@@ -53,6 +63,16 @@ class JudgeOn(enum.StrEnum):
     BEFORE_TOOL_CALL = "before_tool_call"
     TOOL_OUTPUT = "tool_output"
     MODEL_OUTPUT = "model_output"
+
+
+class Verdict(enum.Enum):
+    """Outcome of a single judge evaluation."""
+
+    SAFE = "safe"
+    UNSAFE = "unsafe"
+    # The judge could not be reached or returned nothing usable. Kept distinct
+    # from SAFE so each hook can decide to fail open or closed.
+    UNAVAILABLE = "unavailable"
 
 
 class LlmAsAJudge(BasePlugin):
@@ -92,7 +112,7 @@ class LlmAsAJudge(BasePlugin):
         self._judge_on = judge_on
         self._analysis_parser = analysis_parser
 
-    async def _is_unsafe(self, message: str) -> bool:
+    async def _evaluate(self, message: str) -> Verdict:
         """Runs the LLM as a judge on the given message."""
 
         author, judge_analysis = await util.run_prompt(
@@ -106,9 +126,15 @@ class LlmAsAJudge(BasePlugin):
                 ],
             ),
         )
+        if author == util.ERROR_AUTHOR:
+            # No verdict was reached. Report that, instead of letting the error
+            # text fall through the parser and read as "safe".
+            logging.warning("Safety judge unavailable: %s", judge_analysis)
+            return Verdict.UNAVAILABLE
+
         is_unsafe = self._analysis_parser(judge_analysis)
         logging.debug("[%s]: `%s` (is_unsafe: %s)", author, judge_analysis, is_unsafe)
-        return is_unsafe
+        return Verdict.UNSAFE if is_unsafe else Verdict.SAFE
 
     async def on_user_message_callback(
         self,
@@ -118,7 +144,8 @@ class LlmAsAJudge(BasePlugin):
         if JudgeOn.USER_MESSAGE not in self._judge_on:
             return None
         message = f"<user_message>\n{user_message.parts[0].text}\n</user_message>"
-        if await self._is_unsafe(message):
+        # Fails open: an unavailable judge must not block the user's turn.
+        if await self._evaluate(message) is Verdict.UNSAFE:
             # Set the state to false if the user prompt is unsafe and return a
             # modified user prompt. This will be consumed by the before_run_callback
             # to halt the runner and end the invocation before the user prompt is
@@ -156,8 +183,13 @@ class LlmAsAJudge(BasePlugin):
         if JudgeOn.BEFORE_TOOL_CALL not in self._judge_on:
             return None
         message = f"<tool_call>\nTool call: {tool.name}({tool_args!s})\n</tool_call>"
-        if await self._is_unsafe(message):
+        verdict = await self._evaluate(message)
+        if verdict is Verdict.UNSAFE:
             return {"error": _UNSAFE_TOOL_INPUT_MESSAGE}
+        # Fails closed: a tool call is a real-world action, so an unscreened one
+        # does not proceed.
+        if verdict is Verdict.UNAVAILABLE:
+            return {"error": _JUDGE_UNAVAILABLE_TOOL_MESSAGE}
 
     async def after_tool_callback(
         self,
@@ -169,7 +201,9 @@ class LlmAsAJudge(BasePlugin):
         if JudgeOn.TOOL_OUTPUT not in self._judge_on:
             return None
         message = f"<tool_output>\n{result!s}\n</tool_output>"
-        if await self._is_unsafe(message):
+        # Fails open: the tool has already run, so dropping its result on a
+        # judge outage would strand the invocation.
+        if await self._evaluate(message) is Verdict.UNSAFE:
             return {"error": _UNSAFE_TOOL_OUTPUT_MESSAGE}
 
     async def after_model_callback(
@@ -190,8 +224,14 @@ class LlmAsAJudge(BasePlugin):
         if not model_output:
             return None
         message = f"<model_output>\n{model_output}\n</model_output>"
-        if await self._is_unsafe(message):
-            return types.Content(
-                role="model",
-                parts=[types.Part.from_text(text=_MODEL_RESPONSE_REMOVED_MESSAGE)],
+        # Fails open: a judge outage must not take every reply down with it.
+        if await self._evaluate(message) is Verdict.UNSAFE:
+            # ADK swaps in whatever this returns, so it has to be an LlmResponse
+            # -- a bare Content has no `.content` and blows up downstream in
+            # base_llm_flow._postprocess_async.
+            return LlmResponse(
+                content=types.Content(
+                    role="model",
+                    parts=[types.Part.from_text(text=_MODEL_RESPONSE_REMOVED_MESSAGE)],
+                )
             )
