@@ -17,6 +17,10 @@ the analysis is correspondingly detailed.
   by `care_navigator/fast_api_app.py`.
 - **Reasoning core:** the root `care_navigator` agent (Gemini 2.5 Flash) with 13
   tools, plus two `AgentTool` sub-agents (`insurance_reviewer`, `provider_office`).
+- **Guardrail:** a second, isolated model call — the `LlmAsAJudge` `App` plugin
+  (`gemini-2.5-flash-lite`, own runner and session) screening model responses and
+  tool calls. Being a network dependency, its *availability* is part of the
+  surface, not only its verdicts (threat 2c).
 - **Trust boundary — untrusted input:** pasted text, uploaded PDFs/images, audio,
   and **inbound email bodies** are all attacker-controllable content.
 - **External systems:** Gmail API (read + send, patient OAuth), Bland.ai
@@ -63,6 +67,12 @@ the analysis is correspondingly detailed.
   - *Layer 2 — semantic (the `INSTRUCTION` + quarantine store):* the model
     classifies each document CLEAN vs TAMPERED and routes tampered content to a
     dead-letter store that is invisible to downstream reasoning.
+  - *Layer 3 — runtime judge (`care_navigator/plugins/agent_as_a_judge.py`):* a
+    separate `gemini-2.5-flash-lite` safety agent, registered as an ADK `App`
+    plugin, screens every model response in the invocation (both `AgentTool`
+    sub-agents included) and every tool call before it fires, catching an
+    injection that survived Layers 1–2 at the point where it would become an
+    outbound action.
   - Approval gates ensure even a *missed* injection cannot cause an autonomous
     real-world action.
 - **Threat 2b — shared mutable state:** `CASE` (case + documents + quarantine)
@@ -71,6 +81,20 @@ the analysis is correspondingly detailed.
 - **Status:** ⬜ **Recommended** (accepted for the demo; see README roadmap).
 - **Mitigation:** Move the case, document, and quarantine stores into per-session
   ADK state backed by a persistent, per-user datastore.
+- **Threat 2c — guardrail unavailability:** The Layer-3 judge is a network call
+  to a second model. If it errors or returns nothing, a naive implementation
+  scores the failure as "safe" and the guardrail disappears silently while the
+  system keeps advertising it.
+- **Status:** ✅ **Implemented.**
+- **Mitigation:** `util.run_prompt` reports failures under a distinct
+  `ERROR_AUTHOR` sentinel instead of returning error text for the verdict parser
+  to read, and `_evaluate` maps that to `Verdict.UNAVAILABLE` — a third state
+  kept separate from `SAFE`, logged at WARNING. `before_tool_callback` fails
+  **closed** on it (an unscreened real-world action does not proceed); the
+  response- and user-side hooks fail **open**, trading unscreened replies for
+  availability, since blocking every reply would convert a judge outage into a
+  full agent outage. The approval gates remain the deterministic backstop in
+  either direction. Asserted in `tests/unit/test_judge_plugin.py`.
 
 ### 3. Repudiation (audit trail)
 
@@ -126,6 +150,19 @@ the analysis is correspondingly detailed.
 - **Mitigation:** Add rate-limiting middleware (e.g. `slowapi`) at the FastAPI
   entry points and enforce per-session caps on `send_mail` and
   `place_complaint_call`.
+- **Threat 5b — denial of action via the guardrail:** Because tool calls fail
+  closed when the judge returns no verdict (threat 2c), anything that reliably
+  breaks the judge — exhausting its quota, or looping requests that make it time
+  out — stops MedFriend from taking *any* action, without touching the root
+  agent. Fail-closed converts a confidentiality/integrity risk into an
+  availability one; that is the intended trade, but it is a trade.
+- **Status:** 🟡 **Partial.** The failure is loud (WARNING per occurrence) and
+  bounded — the agent stays able to read and answer — but nothing throttles or
+  circuit-breaks the judge path itself.
+- **Mitigation:** Share the rate limits above with the judge call, and add a
+  short-lived circuit breaker that surfaces a single explicit "safety screening
+  unavailable" state to the patient rather than failing each tool call
+  individually.
 
 ### 6. Elevation of privilege
 
@@ -186,22 +223,25 @@ the analysis is correspondingly detailed.
 | STRIDE category | Primary threat | Status |
 |---|---|---|
 | Spoofing | No transport authentication | 🟡 Partial (auth-invoker default) |
-| Tampering | Prompt injection | ✅ Implemented (2 layers) |
+| Tampering | Prompt injection | ✅ Implemented (3 layers) |
+| Tampering | Guardrail unavailability | ✅ Implemented (fail-closed on tools) |
 | Tampering | Shared in-memory state | ⬜ Recommended |
 | Repudiation | No immutable action log | 🟡 Partial |
 | Information disclosure | PII to model/logs | ✅ Implemented |
 | Information disclosure | Secret leakage | ✅ Implemented |
 | Information disclosure | Over-sharing to counterparties | ✅ Implemented |
 | Denial of service | No rate limiting | 🟡 Partial |
+| Denial of service | Denial of action via the guardrail | 🟡 Partial |
 | Elevation of privilege | Quarantine escape | ✅ Implemented |
 | Elevation of privilege | MCP subprocess over-privilege | ✅ Implemented |
 | Elevation of privilege | Vulnerable OS packages in base image | ✅ Implemented |
 | Elevation of privilege | Unauthenticated privileged tools | 🟡 Partial (auth-invoker default) |
 
 The **runtime, agent-level** threats (injection, PII disclosure, over-sharing,
-quarantine escape, MCP over-privilege) are mitigated in code, and the **Terraform
-platform layer** adds authenticated access, Secret Manager, and durable BigQuery
-logging. The remaining open items are **hard rate-limiting**, a dedicated
+quarantine escape, MCP over-privilege, guardrail unavailability) are mitigated in
+code, and the **Terraform platform layer** adds authenticated access, Secret
+Manager, and durable BigQuery logging. The remaining open items are **hard
+rate-limiting** (including a circuit breaker on the guardrail path), a dedicated
 **append-only action log**, and **per-session (multi-user) state** — appropriate
 to add when moving from the hackathon demo to a hosted service, and tracked in
 the README roadmap.

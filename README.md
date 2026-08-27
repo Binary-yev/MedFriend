@@ -71,7 +71,7 @@ MedFriend is a **multi‑agent system on Google's Agent Development Kit (ADK)**.
 - **Bland.ai** — places an outbound phone call whose AI voice reads an *approved* complaint to a *patient‑supplied* number.
 - **Serving + platform layer (`fast_api_app.py`, `app_utils/`)** — a FastAPI app that serves the ADK web playground **and** [A2A protocol](https://a2a-protocol.org/) endpoints (dynamic agent card + JSON‑RPC), with OpenTelemetry export to Cloud Trace/Logging and pluggable session/artifact services (in‑memory locally; GCS + Gemini Enterprise Agent Platform in the cloud).
 
-- **Runtime safety judge (`plugins/agent_as_a_judge.py`)** — a separate `gemini-2.5-flash-lite` guardian agent, wrapped as an ADK `App` plugin (`LlmAsAJudge`). It inspects the root agent's **model output** and **every tool call before it fires**, and blocks anything its jailbreak-detection rubric (`plugins/prompts.py`) flags as unsafe. This is a third safety layer that sits *around* the agent, independent of — and downstream of — the two input-side layers in `security.py` and the quarantine store.
+- **Runtime safety judge (`plugins/agent_as_a_judge.py`)** — a separate `gemini-2.5-flash-lite` guardian agent, wrapped as an ADK `App` plugin (`LlmAsAJudge`). Because it is registered on the `App` rather than on one agent, it screens **every model response in the invocation** — the root agent's and both sub-agents' — and **every tool call before it fires**, blocking anything its jailbreak-detection rubric (`plugins/prompts.py`) flags as unsafe. If the judge itself is unreachable it returns no verdict, and tool calls fail **closed** while responses fail **open** (see [Security & safety](#security--safety)). This is a third safety layer that sits *around* the agent, independent of — and downstream of — the two input-side layers in `security.py` and the quarantine store.
 
 > **Runtime flows & worked examples:** the diagram above shows *what talks to what*. For *what happens, in what order, and why it's safe* — the document‑intake decision, the four security checkpoints, and the appeal / booking / ambient‑email flows, each with concrete input→output walkthroughs — see **[`FLOWS.md`](FLOWS.md)**.
 
@@ -136,17 +136,28 @@ A trusted record carries the extracted `key_facts`; a quarantine record carries 
 
 ### 4. Runtime judge control surface — `care_navigator/plugins/agent_as_a_judge.py`
 
-The `LlmAsAJudge` plugin (`:58–197`) selects which lifecycle stages to screen via a string enum, and parses the judge sub-agent's verdict with a pluggable parser (default: unsafe iff the analysis contains `UNSAFE`, `:46`):
+The `LlmAsAJudge` plugin (`:78–237`) selects which lifecycle stages to screen via a string enum, and parses the judge sub-agent's verdict with a pluggable parser (default: unsafe iff the analysis contains `UNSAFE`, `:56`):
 
 ```python
-class JudgeOn(StrEnum):              # :49–55
+class JudgeOn(StrEnum):              # :59–65
     USER_MESSAGE     = "user_message"
     BEFORE_TOOL_CALL = "before_tool_call"
     TOOL_OUTPUT      = "tool_output"
     MODEL_OUTPUT     = "model_output"
 ```
 
-Wired on the ADK `App` as `judge_on={"model_output", "before_tool_call"}` (`agent.py:628`). On an unsafe verdict, each hook substitutes a safe placeholder response or returns `{"error": ...}` instead of letting the content through.
+Wired on the ADK `App` as `judge_on={"model_output", "before_tool_call"}` (`agent.py:634–644`). On an unsafe verdict, each hook substitutes a safe placeholder response or returns `{"error": ...}` instead of letting the content through.
+
+A screening run resolves to one of **three** outcomes, not two, so that a judge that never answered is not silently counted as an endorsement:
+
+```python
+class Verdict(Enum):                 # :68–75
+    SAFE        = "safe"
+    UNSAFE      = "unsafe"
+    UNAVAILABLE = "unavailable"      # judge errored or returned nothing
+```
+
+`UNAVAILABLE` is produced whenever `util.run_prompt` reports `ERROR_AUTHOR` (`plugins/util.py:8–11`) — an exception, or a run that yielded no final response. `before_tool_callback` treats it as a block (fail **closed**: an unscreened real-world action does not proceed); the response- and user-side hooks treat it as a pass and log a warning (fail **open**: a judge outage should not take every reply down with it). `tests/unit/test_judge_plugin.py` asserts both directions.
 
 ### 5. Eval judge verdict — `tests/eval/metrics.py:13–15`
 
@@ -184,14 +195,16 @@ Built for **Google & Kaggle's 5‑Day AI Agents Intensive** — see [CAPSTONE.md
 
 This is the part of MedFriend worth reading closely, because an agent that reads your mail and can send email or place calls is only useful if it is hard to weaponize.
 
-**Prompt‑injection defense — two layers (defense in depth).** Every inbound document — pasted text, a PDF, a photo of a letter, a voicemail, *or an email body* — is treated as **untrusted external input** and passed through two independent layers:
+**Prompt‑injection defense — two input‑side layers (defense in depth).** Every inbound document — pasted text, a PDF, a photo of a letter, a voicemail, *or an email body* — is treated as **untrusted external input** and passed through two independent layers before the agent acts on it. A third layer, the runtime judge described below, screens the *other* end — what the agent says and does:
 
 - **Layer 1 — deterministic (`care_navigator/security.py`).** Pure regex/keyword screening that runs **in code, before the model sees the text**. It redacts high‑risk PII (SSNs, payment‑card numbers) so those tokens never reach the LLM or the logs, and it flags known injection signatures ("ignore your instructions", "auto‑approve", "un‑quarantine", …). This layer can't be argued out of a decision by clever wording, because it is not a model. It's wired into the email channel (inside `check_new_mail`) and the pasted‑text channel (the root agent's `before_model_callback`, which appends a code‑level "treat this as tampered" advisory when a signature matches).
 - **Layer 2 — semantic (the agent's `INSTRUCTION` + quarantine store).** The model classifies each document CLEAN vs TAMPERED. Tampered content must be sent to `quarantine_document` **before the agent writes anything back**, and is then invisible to all downstream reasoning — it can never be used to answer a question, draft an appeal, or take an action. Releasing a quarantined item requires a *fresh clean copy* re‑run through intake; the original flagged text is never promoted to the trusted store. This layer catches the novel, subtly‑phrased injections a fixed keyword list would miss.
 
 The two layers are deliberately different in kind — Layer 1 is robust but rigid, Layer 2 is flexible but probabilistic — so an attacker has to defeat both. (See `care_navigator/security.py` and intake rules 3–4 in `agent.py`; `tests/unit/test_security.py` and the eval suite's `injection_defense` case assert the behavior.)
 
-**An LLM‑as‑a‑Judge guardrail on the agent's output and tool calls.** Beyond the two input‑side layers, a separate safety agent (`care_navigator/plugins/agent_as_a_judge.py`, with the jailbreak‑detection prompt in `plugins/prompts.py`) inspects the stages the other layers don't cover. It runs on the root agent's **model output** and **before every tool call** — wired in as `plugins=[LlmAsAJudge(judge_on={"model_output", "before_tool_call"})]` on the ADK `App` — and blocks an unsafe response or an unsafe tool invocation before it takes effect. It deliberately does **not** judge the incoming user message: input‑side injection is already handled by Layers 1–2, and hard‑blocking the user turn here would preempt the intended *quarantine* response. *(This runtime guardrail is distinct from the offline `tests/eval/metrics.py` judge below, which only grades response quality during evaluation.)*
+**Layer 3 — an LLM‑as‑a‑Judge guardrail on the agent's output and tool calls.** Beyond the two input‑side layers, a separate safety agent (`care_navigator/plugins/agent_as_a_judge.py`, with the jailbreak‑detection prompt in `plugins/prompts.py`) inspects the stages the other layers don't cover. It runs on **model output** and **before every tool call** — wired in as `plugins=[LlmAsAJudge(judge_on={"model_output", "before_tool_call"})]` on the ADK `App` — and blocks an unsafe response or an unsafe tool invocation before it takes effect. Because the plugin is registered on the `App`, the model‑output screen covers every agent in the invocation, the two `AgentTool` sub‑agents included, not just the root agent; a response carrying only a function call has no text to screen and is covered by the tool‑call hook instead. It deliberately does **not** judge the incoming user message: input‑side injection is already handled by Layers 1–2, and hard‑blocking the user turn here would preempt the intended *quarantine* response. *(This runtime guardrail is distinct from the offline `tests/eval/metrics.py` judge below, which only grades response quality during evaluation.)*
+
+**What happens when the guardrail itself fails.** A guardrail that silently disappears is worse than one that is absent, because the surrounding claims keep being made for it. So a screening run that reaches no verdict — the judge call raised, or returned nothing — is recorded as `Verdict.UNAVAILABLE` and logged, never folded into "safe". The two directions are then chosen per hook, deliberately: **tool calls fail closed** (`{"error": ...}`, so an unscreened email, phone call, or appeal never goes out), while **responses fail open** (the reply is delivered and a warning is logged, because dropping every reply would turn a judge outage into a full agent outage). This is a real availability trade‑off, not a free win: while the judge is down, MedFriend degrades to a read‑only assistant that can still answer but cannot act. `tests/unit/test_judge_plugin.py` pins both behaviors, and the judge round‑trip is stubbed there so the whole file runs without a model or network.
 
 **Approval gates on every real‑world action.** Submitting an appeal, sending an email, placing a phone call, and booking an appointment all **stop and wait for explicit patient approval**. The agent will not contact the insurer or the office at document‑intake time, and it never announces an approval a counterparty didn't actually return.
 
@@ -238,9 +251,9 @@ MedFriend/
 │   ├── agent.py                    # Root agent, sub-agents, all 13 tools, and the operating policy (INSTRUCTION)
 │   ├── security.py                 # DETERMINISTIC security layer: PII scrub + injection detection (Layer 1)
 │   ├── plugins/                    # Runtime LLM-as-a-Judge guardrail (safety Layer 3)
-│   │   ├── agent_as_a_judge.py     # Judge plugin: screens model output + every tool call, blocks unsafe ones
+│   │   ├── agent_as_a_judge.py     # Judge plugin: screens model output + every tool call; fails closed on tool calls
 │   │   ├── prompts.py              # Jailbreak-detection instruction (10-technique taxonomy)
-│   │   └── util.py                 # Async runner helper for the judge sub-agent
+│   │   └── util.py                 # Async runner helper for the judge sub-agent (+ the no-verdict sentinel)
 │   ├── fast_api_app.py             # FastAPI serving surface (ADK web UI + A2A + feedback endpoint)
 │   └── app_utils/
 │       ├── a2a.py                  # Attaches A2A agent-card + JSON-RPC routes
@@ -248,7 +261,7 @@ MedFriend/
 │       ├── telemetry.py            # OpenTelemetry to Cloud Trace/Logging (prompt content suppressed)
 │       └── typing.py               # Pydantic models (feedback)
 ├── tests/
-│   ├── unit/                       # Fast, dependency-free tests: tamper-defense + deterministic security layer
+│   ├── unit/                       # Fast, dependency-free tests: tamper-defense, Layer-1 filter, Layer-3 judge
 │   ├── integration/                # Live-server E2E (native ADK route, A2A stream, agent card, feedback)
 │   └── eval/                       # ADK behavioral eval suite (datasets + LLM-as-judge + tool-trajectory metric)
 ├── deployment/terraform/           # Infrastructure as code: Cloud Run + least-privilege SA + Secret Manager + GCS/BigQuery
@@ -356,7 +369,7 @@ Open the printed URL and start a conversation with MedNav. Good things to try:
 uv run pytest tests/unit tests/integration
 ```
 
-- `tests/unit/` — fast, dependency‑free tests of the security‑critical logic, no model or network required: `test_case_tools.py` covers the tamper‑defense state machine (save vs. quarantine, quarantine isolation, discard, plan‑fact lookups), and `test_security.py` covers the deterministic Layer‑1 filter (PII scrubbing, injection detection, the email pre‑filter, and the `before_model_callback`).
+- `tests/unit/` — fast, dependency‑free tests of the security‑critical logic, no model or network required: `test_case_tools.py` covers the tamper‑defense state machine (save vs. quarantine, quarantine isolation, discard, plan‑fact lookups), `test_security.py` covers the deterministic Layer‑1 filter (PII scrubbing, injection detection, the email pre‑filter, and the `before_model_callback`), and `test_judge_plugin.py` covers the Layer‑3 runtime judge with its sub‑agent stubbed out (both wired hooks on safe / unsafe / no‑verdict, fail‑closed on tool calls vs. fail‑open on responses, and the hooks left deliberately unwired).
 - `tests/integration/test_server_e2e.py` — boots the real FastAPI server and exercises the native ADK `/run_sse` route, the A2A JSON‑RPC stream, the A2A agent card, and the `/feedback` endpoint end‑to‑end.
 
 **Behavioral evaluation** (ADK eval via agents‑cli) — the iteration loop for agent quality:
