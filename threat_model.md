@@ -210,6 +210,18 @@ the analysis is correspondingly detailed.
   `node_modules` rather than via `npx`, so the exact 0.6.2 release is verified by
   its SHA-512 hash and a tampered or unpinned upstream cannot be pulled at runtime
   (npm-side parity with the hash-locked Python dependencies).
+
+  Pinning a release also pins its known vulnerabilities, so the `overrides` block
+  in `package.json` carries the transitive graph forward as advisories land. It
+  already forced `@modelcontextprotocol/sdk` off the vulnerable 1.0.1 that
+  `server-google-maps@0.6.2` pins; it now also pins that sdk's own `hono`
+  (→ 4.12.34) and `@hono/node-server` (→ 1.19.15) transitives, clearing
+  CVE-2026-69207, CVE-2026-71848/71849/71850 and GHSA-frvp-7c67-39w9. Those live
+  in the sdk's **HTTP** transport, which MedFriend never loads — the server is
+  launched over stdio — so none were reachable here; they are patched anyway,
+  because an unexploitable CVE on the dependency graph still has to be assessed
+  by anyone auditing this repo, and "we looked and it does not apply" is a claim
+  that decays every time the graph moves. `npm audit` reports 0 vulnerabilities.
 - **Mitigation (further):** Apply container egress restrictions to further bound
   what the subprocess can reach.
 - **Threat 6c — unauthenticated access to privileged tools:** Same root cause as

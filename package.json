@@ -2,11 +2,13 @@
   "name": "medfriend-mcp-servers",
   "version": "0.0.0",
   "private": true,
-  "description": "Integrity-pinned MCP server(s) that MedFriend launches over stdio. Installed with `npm ci` from the committed lockfile so npx cannot pull an unpinned/tampered release. The `overrides` block forces @modelcontextprotocol/sdk forward from the vulnerable 1.0.1 that the archived server-google-maps@0.6.2 pins, patching GHSA-8r9q-7v3j-jr4g (ReDoS), GHSA-w48q-cv73-mx4w (DNS rebinding), and the cross-client data-leak advisory.",
+  "description": "Integrity-pinned MCP server(s) that MedFriend launches over stdio. Installed with `npm ci` from the committed lockfile so npx cannot pull an unpinned/tampered release. The `overrides` block forces @modelcontextprotocol/sdk forward from the vulnerable 1.0.1 that the archived server-google-maps@0.6.2 pins, patching GHSA-8r9q-7v3j-jr4g (ReDoS), GHSA-w48q-cv73-mx4w (DNS rebinding), and the cross-client data-leak advisory. It also pins the sdk's own hono/@hono/node-server transitives forward, clearing CVE-2026-69207, CVE-2026-71848/71849/71850 and GHSA-frvp-7c67-39w9; those are the sdk's HTTP transport, which MedFriend does not use (it launches the server over stdio), but an unexploitable CVE is still a CVE on the dependency graph.",
   "dependencies": {
     "@modelcontextprotocol/server-google-maps": "0.6.2"
   },
   "overrides": {
-    "@modelcontextprotocol/sdk": "1.29.0"
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "hono": "4.12.34",
+    "@hono/node-server": "1.19.15"
   }
 }
