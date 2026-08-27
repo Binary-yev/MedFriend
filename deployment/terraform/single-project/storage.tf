@@ -26,3 +26,17 @@ resource "google_storage_bucket" "logs_data_bucket" {
 
   depends_on = [resource.google_project_service.services]
 }
+
+# Runtime object access, scoped to this one bucket.
+#
+# The app never creates, deletes, or re-configures a bucket: Terraform creates
+# this one, and GcsArtifactService only ever calls upload/get/list/delete on
+# BLOBS inside it (see care_navigator/app_utils/services.py). Telemetry likewise
+# only writes objects under gs://<bucket>/<path>. So objectAdmin here replaces
+# the project-wide roles/storage.admin the app SA used to carry, which also
+# granted authority over every other bucket in the project.
+resource "google_storage_bucket_iam_member" "app_sa_logs_bucket_object_admin" {
+  bucket = google_storage_bucket.logs_data_bucket.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.app_sa.email}"
+}

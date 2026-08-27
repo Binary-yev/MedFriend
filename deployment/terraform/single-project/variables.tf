@@ -49,7 +49,11 @@ variable "app_sa_roles" {
     "roles/aiplatform.user",
     "roles/logging.logWriter",
     "roles/cloudtrace.agent",
-    "roles/storage.admin",
     "roles/serviceusage.serviceUsageConsumer",
   ]
+  # Deliberately project-wide only where no narrower predefined role exists:
+  # aiplatform.user is the standard grant for calling a model. Resource-scoped
+  # access is bound next to the resource instead of listed here --
+  # roles/storage.objectAdmin on the logs bucket (storage.tf) and
+  # roles/secretmanager.secretAccessor per secret (iam.tf).
 }

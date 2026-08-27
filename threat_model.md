@@ -254,6 +254,34 @@ the analysis is correspondingly detailed.
   require installing or removing a package; `dist-upgrade` is the escalation if
   a future fix is ever silently held back that way.
 
+- **Threat 6e — over-broad runtime service account:** Cloud Run runs the agent
+  under a service account (`service.tf`). Anything that gets code execution in
+  that container — the MCP subprocess of 6b, a dependency compromise — inherits
+  every role that account holds. Two of the original grants were project-wide
+  when the app only ever touches specific resources: `roles/storage.admin` (full
+  control of *every* bucket in the project, including creating, deleting, and
+  rewriting bucket IAM) and a project-level `roles/secretmanager.secretAccessor`
+  (read access to every secret in the project, including ones added later by
+  anyone).
+- **Status:** ✅ **Implemented** for the runtime identity; 🟡 **Partial**
+  overall.
+- **Mitigation:** Both are now resource-scoped. `storage.admin` is replaced by
+  `roles/storage.objectAdmin` bound to the logs bucket alone
+  (`google_storage_bucket_iam_member` in `storage.tf`) — sufficient because
+  Terraform creates the bucket and `GcsArtifactService` only ever calls
+  upload/get/list/delete on blobs inside it. The project-level secret accessor is
+  replaced by three `google_secret_manager_secret_iam_member` bindings, one per
+  secret the container actually mounts. What remains project-wide is
+  `roles/aiplatform.user` (no narrower predefined role exists for calling a
+  model) plus `logging.logWriter`, `cloudtrace.agent` and
+  `serviceusage.serviceUsageConsumer`, which are already minimal.
+- **Residual risk:** the **deploy-time** identity is not hardened. `iam.tf`
+  grants `roles/cloudbuild.builds.builder` to the *default compute* service
+  account so `gcloud run deploy --source` can build and push. That is a shared
+  identity holding the broadest role in the file. Narrowing it means moving
+  builds to a dedicated build service account, which depends on the deployment
+  pipeline; recorded here rather than silently left out.
+
 ---
 
 ## Summary
@@ -274,6 +302,7 @@ the analysis is correspondingly detailed.
 | Elevation of privilege | Quarantine escape | ✅ Implemented |
 | Elevation of privilege | MCP subprocess over-privilege | ✅ Implemented |
 | Elevation of privilege | Vulnerable OS packages in base image | ✅ Implemented |
+| Elevation of privilege | Over-broad runtime service account | ✅ Implemented (resource-scoped) |
 | Elevation of privilege | Unauthenticated privileged tools | 🟡 Partial (auth-invoker default) |
 
 The **runtime, agent-level** threats (injection, PII disclosure, over-sharing,
