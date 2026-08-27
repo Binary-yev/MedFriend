@@ -71,7 +71,16 @@ MedFriend's security design is documented in detail in the README
   judge outage degrades MedFriend to a read-only assistant rather than taking it
   offline entirely.
 - **Human approval gates** on every real-world action (submitting an appeal,
-  sending email, placing a call, booking).
+  sending email, placing a call, booking). For the two tools with an
+  irreversible external side effect — `send_mail` (a real Gmail send) and
+  `place_complaint_call` (a real outbound phone call) — the gate is enforced in
+  **code**, not in the prompt: both are wrapped in ADK's
+  `FunctionTool(..., require_confirmation=True)`, so the function body cannot
+  run until a `FunctionResponse` carrying `{"confirmed": true}` comes back
+  out-of-band. The remaining gates (appeal submission, booking) are prompt-level,
+  because those paths reach simulated counterparties — `insurance_reviewer` and
+  `provider_office` are bare `LlmAgent`s with no tools, so nothing leaves the
+  process.
 - **Data minimization** — only the minimum data goes to each counterparty (e.g.
   location + specialty to the Maps search, never patient identity or health
   details).
@@ -106,8 +115,12 @@ MedFriend's security design is documented in detail in the README
 - The Layer-3 judge is itself a model, so it is probabilistic: it can miss a
   novel jailbreak, and on the response path it fails **open** by design, meaning
   a judge outage lets replies through unscreened (tool calls still fail closed).
-  Neither the judge nor the pre-filter is a substitute for the approval gates,
-  which are deterministic and hold regardless of what any model concludes.
+  Neither the judge nor the pre-filter is a substitute for the confirmation
+  gates on `send_mail` and `place_complaint_call`, which are enforced in code and
+  hold regardless of what any model concludes. The prompt-level gates on the
+  simulated counterparty paths carry no such guarantee — they are
+  instruction-following, and a model that has been argued out of them will not be
+  stopped by them.
 - Under SSE streaming (`streaming=true` on `/run_sse`) the response-side screen
   runs per partial chunk rather than over the assembled reply, so an early chunk
   can reach the client before a later one is judged. The default non-streaming

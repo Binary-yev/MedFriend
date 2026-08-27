@@ -73,8 +73,13 @@ the analysis is correspondingly detailed.
     sub-agents included) and every tool call before it fires, catching an
     injection that survived Layers 1–2 at the point where it would become an
     outbound action.
-  - Approval gates ensure even a *missed* injection cannot cause an autonomous
-    real-world action.
+  - Confirmation gates mean even a *missed* injection cannot cause an autonomous
+    real-world action: `send_mail` and `place_complaint_call` — the only two
+    tools that act irreversibly outside the process — are wrapped in
+    `FunctionTool(..., require_confirmation=True)`, so ADK suspends the call and
+    the function body never executes without an out-of-band
+    `{"confirmed": true}`. This holds independently of the model, which is what
+    makes it a backstop rather than a third opinion.
 - **Threat 2b — shared mutable state:** `CASE` (case + documents + quarantine)
   is a process-wide, in-memory dict. Concurrent users would read/overwrite each
   other's data, and all state is lost on restart.
@@ -93,8 +98,29 @@ the analysis is correspondingly detailed.
   **closed** on it (an unscreened real-world action does not proceed); the
   response- and user-side hooks fail **open**, trading unscreened replies for
   availability, since blocking every reply would convert a judge outage into a
-  full agent outage. The approval gates remain the deterministic backstop in
-  either direction. Asserted in `tests/unit/test_judge_plugin.py`.
+  full agent outage. Fail-open on the response path is acceptable precisely
+  because the two irreversible tools are gated in code (threat 2d) rather than by
+  the prompt, so an unscreened reply cannot itself send mail or place a call.
+  Asserted in `tests/unit/test_judge_plugin.py`.
+- **Threat 2d — autonomous irreversible action:** Every other control here is a
+  model judging a model. If all of them are defeated at once — a novel injection
+  that survives Layers 1–2 and that the judge scores safe — the remaining
+  question is whether anything non-probabilistic stands between the agent and a
+  sent email or a placed phone call.
+- **Status:** ✅ **Implemented** for the irreversible tools; 🟡 **Partial**
+  overall.
+- **Mitigation:** `send_mail` and `place_complaint_call` are wrapped in
+  `FunctionTool(..., require_confirmation=True)` (`agent.py`). ADK suspends the
+  call, emits an `adk_request_confirmation` request, and `FunctionTool` returns
+  an error *before* invoking the function body; execution resumes only when a
+  `FunctionResponse` carrying `{"confirmed": true}` arrives out-of-band, which
+  the model cannot synthesize for itself. These are the only two tools with an
+  external irreversible effect — `insurance_reviewer` and `provider_office` are
+  bare `LlmAgent`s with no tools, so appeal submission and booking never leave
+  the process, and their gates remain prompt-level by design. Asserted in
+  `tests/unit/test_approval_gates.py`, including that neither sub-agent has
+  acquired tools of its own. Residual risk: the confirmation must be answered by
+  a human — a client that auto-confirms turns the gate into theater.
 
 ### 3. Repudiation (audit trail)
 
@@ -225,6 +251,7 @@ the analysis is correspondingly detailed.
 | Spoofing | No transport authentication | 🟡 Partial (auth-invoker default) |
 | Tampering | Prompt injection | ✅ Implemented (3 layers) |
 | Tampering | Guardrail unavailability | ✅ Implemented (fail-closed on tools) |
+| Tampering | Autonomous irreversible action | ✅ Implemented (code-enforced confirmation) |
 | Tampering | Shared in-memory state | ⬜ Recommended |
 | Repudiation | No immutable action log | 🟡 Partial |
 | Information disclosure | PII to model/logs | ✅ Implemented |
