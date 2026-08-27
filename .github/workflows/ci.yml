@@ -28,6 +28,19 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --frozen
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Enforces the supply-chain claim rather than asserting it: `npm ci` fails
+      # if package.json and package-lock.json disagree (the npm-side equivalent of
+      # `uv sync --frozen`) and verifies each package's SHA-512 hash from the
+      # committed lockfile. Without this, the pinned MCP server described in
+      # threat_model.md (threat 6b) could silently desync and nothing would notice.
+      - name: Install pinned MCP server (npm ci)
+        run: npm ci --omit=dev
+
       - name: Check formatting (ruff)
         run: uv run ruff format --check .
 

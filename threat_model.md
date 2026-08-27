@@ -209,7 +209,10 @@ the analysis is correspondingly detailed.
   + `package-lock.json`, installed with `npm ci`) and launched directly from
   `node_modules` rather than via `npx`, so the exact 0.6.2 release is verified by
   its SHA-512 hash and a tampered or unpinned upstream cannot be pulled at runtime
-  (npm-side parity with the hash-locked Python dependencies).
+  (npm-side parity with the hash-locked Python dependencies). CI enforces this
+  rather than trusting it: `.github/workflows/ci.yml` runs `npm ci --omit=dev` on
+  every push and pull request, which fails the build if `package.json` and
+  `package-lock.json` ever disagree or a package's hash does not match.
 
   Pinning a release also pins its known vulnerabilities, so the `overrides` block
   in `package.json` carries the transitive graph forward as advisories land. It
