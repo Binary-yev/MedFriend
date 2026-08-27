@@ -49,7 +49,7 @@ from google.genai import types
 from google.genai.types import HttpRetryOptions
 
 # Tools
-from google.adk.tools import McpToolset
+from google.adk.tools import FunctionTool, McpToolset
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools.mcp_tool import StdioConnectionParams
 from mcp.client.stdio import StdioServerParameters
@@ -623,8 +623,24 @@ root_agent = Agent(
         discard_quarantine,
         list_documents,
         check_new_mail,
-        send_mail,
-        place_complaint_call,
+        # send_mail and place_complaint_call are the ONLY two tools with an
+        # irreversible external side effect (a real Gmail send; a real Bland.ai
+        # phone call that costs money and rings a real person). Every other tool
+        # either mutates in-memory state or talks to a simulated counterparty —
+        # insurance_reviewer and provider_office are bare LlmAgents with no tools
+        # of their own, so "submitting an appeal" internally and "booking" do not
+        # leave the process.
+        #
+        # For these two the approval gate is enforced in CODE, not in the
+        # INSTRUCTION: require_confirmation makes ADK suspend the call and emit
+        # an `adk_request_confirmation` request, and FunctionTool returns an
+        # error without ever invoking the function body until a FunctionResponse
+        # carrying {"confirmed": true} comes back. A jailbroken model, a missed
+        # injection, or a judge that failed open cannot reach the network call.
+        # The INSTRUCTION rules still apply — they make the agent ASK first, so
+        # the confirmation is an informed one rather than a surprise prompt.
+        FunctionTool(func=send_mail, require_confirmation=True),
+        FunctionTool(func=place_complaint_call, require_confirmation=True),
         maps_mcp,
     ],
 )
